@@ -14,6 +14,6 @@ namespace Visual_PowerShell.Models
         public string Website { get; set; }
         [JsonIgnore]
         public string Address { get; set; } = "No Address";
-        public List<Command> Commands { get; set; }
+        public List<Command> Commands { get; set; } = new List<Command>();
     }
 }

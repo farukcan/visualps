@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestPlatform.ObjectModel;
+﻿using System.Threading;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Management.Automation;
+using System.Management.Automation.Runspaces;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Policy;
@@ -19,9 +21,7 @@ using Visual_PowerShell.Helpers;
 using Visual_PowerShell.Models;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
-
-//using System.Management.Automation;
-//using System.Collections.Objectmodel;
+using Command = Visual_PowerShell.Models.Command;
 
 namespace Visual_PowerShell
 {
@@ -106,6 +106,7 @@ namespace Visual_PowerShell
         public List<Repository> commandRepositories = new List<Repository>();
         private async void Form_Load(object sender, EventArgs e)
         {
+            workplaceInput.Text = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
             await RetreivePackages();
         }
         private void UpdateRepositoryList()
@@ -319,29 +320,125 @@ namespace Visual_PowerShell
         {
             Launch();
         }
+        PowerShell _ps;
         private void Launch()
         {
-            terminal.Focus();
-            using (PowerShell PowerShellInstance = PowerShell.Create())
+            if (repositoryList.SelectedItem is null) return;
+            if (commandList.SelectedItem is null) return;
+            var repo = commandRepositories[repositoryList.SelectedIndex];
+            var command = repo.Commands[commandList.SelectedIndex];
+            LaunchingMode();
+            PowerShell ps = PowerShell.Create();
+            _ps = ps;
+            ps.AddScript("cd " + workplaceInput.Text);
+            int i = 0;
+            terminalArea.Text += $"\r\n     -----------";
+            terminalArea.Text += $"\r\n     Directory: {workplaceInput.Text}";
+            foreach (var script in command.Scripts)
             {
-                // use "AddScript" to add the contents of a script file to the end of the execution pipeline.
-                // use "AddCommand" to add individual commands/cmdlets to the end of the execution pipeline.
-                PowerShellInstance.AddScript($"cd {workplaceInput.Text}");
+                i++;
+                terminalArea.Text += $"\r\n     {i})   "  + script;
+                ps.AddScript(script);
+            }
+            terminalArea.Text += $"\r\n     ----------- \r\n";
+            ps.AddCommand("Out-String").AddParameter("Stream", true);
 
-                // use "AddParameter" to add a single parameter to the last command/script on the pipeline.
-                //PowerShellInstance.AddParameter("param1", "parameter 1 value!");
-                // invoke execution on the pipeline (collecting output)
-                Collection<PSObject> PSOutput = PowerShellInstance.Invoke();
+            var output = new PSDataCollection<string>();
+            output.DataAdded += new EventHandler<DataAddedEventArgs>(ProcessOutput);
+            cancelButtons.Enabled = true;
 
-                // loop through each output object item
-                foreach (PSObject outputItem in PSOutput)
+            var asyncToken = ps.BeginInvoke<object, string>(null, output);
+
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.DoWork += (obj, args) =>
+            {
+                while ( ! (asyncToken.IsCompleted || ps.HadErrors) )
                 {
-                    if (outputItem != null)
+                    Thread.Sleep(100);
+                }
+                if (ps.HadErrors)
+                {
+                    foreach (var errorRecord in ps.Streams.Error)
                     {
-                        MessageBox.Show(outputItem.BaseObject.ToString());
+                        terminalArea.Text += "\r\n" + errorRecord.ToString();
                     }
                 }
+                ScrollTerminalArea();
+                LaunchFreeMode();
+            };
+            worker.RunWorkerAsync();
+        }
+
+        void ScrollTerminalArea()
+        {
+            terminalArea.SelectionStart = terminalArea.TextLength;
+            terminalArea.ScrollToCaret();
+        }
+
+        void ProcessOutput(object? sender, DataAddedEventArgs eventArgs)
+        {
+            var collection = sender as PSDataCollection<string>;
+            if (null != collection)
+            {
+                var outputItem = collection[eventArgs.Index];
+                terminalArea.Text += "\r\n" + outputItem.ToString();
+                ScrollTerminalArea();
             }
+        }
+
+        private void workplaceInput_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void selectFolder_Click(object sender, EventArgs e)
+        {
+            // Select Folder
+            FolderBrowserDialog folderDialog = new FolderBrowserDialog();
+            folderDialog.ShowNewFolderButton = true;
+            DialogResult result = folderDialog.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                workplaceInput.Text = folderDialog.SelectedPath;
+                Environment.SpecialFolder root = folderDialog.RootFolder;
+            }
+        }
+
+        private void cancelButtons_Click(object sender, EventArgs e)
+        {
+            if(_ps is not null)
+            {
+                terminalArea.Text += $"\r\n  (Cancelled Manually)";
+                _ps.Stop();
+                LaunchFreeMode();
+                _ps = null;
+            }
+        }
+
+        void LaunchingMode()
+        {
+            launcherTabs.SelectedTab = terminal;
+            ((Control)commandsTab).Enabled = false;
+            ((Control)scriptsTab).Enabled = false;
+        }
+        void LaunchFreeMode()
+        {
+            cancelButtons.Enabled = false;
+            ((Control)scriptsTab).Enabled = true;
+            ((Control)commandsTab).Enabled = true;
+        }
+
+        private void launchOnClick(object sender, EventArgs e)
+        {
+            if (launchOnClickCheck.Checked)
+            {
+                Launch();
+            }
+        }
+
+        private void launchOnDoubleClick(object sender, EventArgs e)
+        {
+            Launch();
         }
     }
 }
