@@ -1,12 +1,17 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.VisualStudio.TestPlatform.ObjectModel;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Management.Automation;
 using System.Net.Http;
+using System.Reflection;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -14,6 +19,9 @@ using Visual_PowerShell.Helpers;
 using Visual_PowerShell.Models;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
+
+//using System.Management.Automation;
+//using System.Collections.Objectmodel;
 
 namespace Visual_PowerShell
 {
@@ -58,6 +66,12 @@ namespace Visual_PowerShell
             {
                 commandList.SelectedIndex = index;
             }
+            else
+            {
+                ((Control)scriptsTab).Enabled = false;
+                scriptList.Items.Clear();
+                scriptList.Items.Add("Select a command to edit its scripts");
+            }
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
@@ -70,31 +84,29 @@ namespace Visual_PowerShell
 
         }
 
-        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
+        private void commandList_SelectedIndexChanged(object sender, EventArgs e)
         {
-
+            UpdateScripts();
         }
-        public List<Repository> commandRepositories = new List<Repository>();
-        private void Form_Load(object sender, EventArgs e)
+
+        private void UpdateScripts()
         {
-            commandRepositories.Add(new Repository()
+            if (repositoryList.SelectedItem is null) return;
+            if (commandList.SelectedItem is null) return;
+            var repo = commandRepositories[repositoryList.SelectedIndex];
+            var command = repo.Commands[commandList.SelectedIndex];
+            scriptList.Items.Clear();
+            foreach (string script in command.Scripts)
             {
-                Name = "Files",
-                Author = "Faruk Can",
-                Website = "htts://farukcan.net",
-                Commands = new List<Command>()
-                {
-                    new Command()
-                    {
-                        Name = "List files in the folder",
-                        Scripts = new List<string>()
-                        {
-                            "ls"
-                        }
-                    }
-                }
-            });
-            UpdateRepositoryList();
+                scriptList.Items.Add(script);
+            }
+            ((Control)scriptsTab).Enabled = true;
+        }
+
+        public List<Repository> commandRepositories = new List<Repository>();
+        private async void Form_Load(object sender, EventArgs e)
+        {
+            await RetreivePackages();
         }
         private void UpdateRepositoryList()
         {
@@ -166,29 +178,21 @@ namespace Visual_PowerShell
         private async void addRemote_Click(object sender, EventArgs e)
         {
             string prompValue = Prompt.ShowDialog("JSON URL (Gist, API, CDN)", "Download Remote JSON","Download");
-            await LoadFromURL(prompValue);
+            await LoadFromURL(prompValue,true);
         }
-        private async Task LoadFromURL(string url)
+        private async Task LoadFromURL(string url,bool setRepoIndex=false)
         {
-            if (url.StartsWith("https://gist.github.com/"))
-            {
-                url = url.Replace("https://gist.github.com/", "https://gist.githubusercontent.com/");
-                if (!url.Contains("/raw"))
-                {
-                    url = url + (url.EndsWith("/") ? "raw" : "/raw");
-                }
-            }
             try
             {
                 using (HttpClient client = new HttpClient())
                 {
-                    var response = await client.GetAsync(url);
+                    var response = await client.GetAsync(ParseGistURL(url));
                     var json = await response.Content.ReadAsStringAsync();
                     Repository repository = JsonConvert.DeserializeObject<Repository>(json);
                     repository.Address = url;
                     commandRepositories.Insert(0, repository);
                     UpdateRepositoryList();
-                    SetRepositoryIndex(0);
+                    if(setRepoIndex) SetRepositoryIndex(0);
                 }
             }
             catch (Exception exception)
@@ -196,6 +200,50 @@ namespace Visual_PowerShell
                 MessageBox.Show(exception.Message, url);
             }
             // done
+        }
+
+        private string ParseGistURL(string url)
+        {
+            if (url.StartsWith("https://gist.github.com/"))
+            {
+                url = url.Replace("https://gist.github.com/", "https://gist.githubusercontent.com/");
+                if (!url.Contains("/raw"))
+                {
+                    url = url + (url.EndsWith("/") ? "raw?update" : "/raw?update");
+                }
+            }
+            return url;
+        }
+
+        private async Task RetreivePackages()
+        {
+            // split to lines
+            var packages = packageList.Text.Split(
+                new string[] { "\r\n", "\r", "\n" },
+                StringSplitOptions.None
+            );
+            // foreach package
+            foreach ( var package in packages )
+            {
+                try
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        var response = await client.GetAsync(ParseGistURL(package));
+                        var json = await response.Content.ReadAsStringAsync();
+                        var list = JsonConvert.DeserializeObject<List<string>>(json);
+                        foreach (var url in list)
+                        {
+                            await LoadFromURL(url);
+                        }
+                    }
+                }
+                catch(Exception exception)
+                {
+                    // Do nothing
+                }
+            }
+            UpdateRepositoryList();
         }
 
         private void newCommand_Click(object sender, EventArgs e)
@@ -238,6 +286,62 @@ namespace Visual_PowerShell
             txt.Write(json);
             txt.Close();
             UpdateRepositoryList();
+        }
+
+        private void settingsTab_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void deleteScript_Click(object sender, EventArgs e)
+        {
+            if (scriptList.SelectedItem is null) return;
+            if (repositoryList.SelectedItem is null) return;
+            if (commandList.SelectedItem is null) return;
+            var repo = commandRepositories[repositoryList.SelectedIndex];
+            var command = repo.Commands[commandList.SelectedIndex];
+            command.Scripts.RemoveAt(scriptList.SelectedIndex);
+            UpdateScripts();
+        }
+
+        private void newScript_Click(object sender, EventArgs e)
+        {
+            if (repositoryList.SelectedItem is null) return;
+            if (commandList.SelectedItem is null) return;
+            var repo = commandRepositories[repositoryList.SelectedIndex];
+            var command = repo.Commands[commandList.SelectedIndex];
+            string promptText = Prompt.ShowDialog("Enter script ; {text:YourTextInput} , {file:YourFileInput} , {save:YourFileInput}", "New script", "Create");
+            command.Scripts.Add(promptText);
+            UpdateScripts();
+        }
+
+        private void launchButton_Click(object sender, EventArgs e)
+        {
+            Launch();
+        }
+        private void Launch()
+        {
+            terminal.Focus();
+            using (PowerShell PowerShellInstance = PowerShell.Create())
+            {
+                // use "AddScript" to add the contents of a script file to the end of the execution pipeline.
+                // use "AddCommand" to add individual commands/cmdlets to the end of the execution pipeline.
+                PowerShellInstance.AddScript($"cd {workplaceInput.Text}");
+
+                // use "AddParameter" to add a single parameter to the last command/script on the pipeline.
+                //PowerShellInstance.AddParameter("param1", "parameter 1 value!");
+                // invoke execution on the pipeline (collecting output)
+                Collection<PSObject> PSOutput = PowerShellInstance.Invoke();
+
+                // loop through each output object item
+                foreach (PSObject outputItem in PSOutput)
+                {
+                    if (outputItem != null)
+                    {
+                        MessageBox.Show(outputItem.BaseObject.ToString());
+                    }
+                }
+            }
         }
     }
 }
