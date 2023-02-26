@@ -1,7 +1,27 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
-<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Visual_PowerShell.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="CommandRepositories" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="RepositoryPackages" Type="System.String" Scope="User">
+      <Value Profile="(Default)">https://gist.github.com/farukcan/487b5577aa672a0b3ad183f87f74a2c9</Value>
+    </Setting>
+    <Setting Name="Workspace" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="RepositoryIndex" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="BackToCommands" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="DefaultAuthor" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Your name</Value>
+    </Setting>
+    <Setting Name="DefaultWebsite" Type="System.String" Scope="User">
+      <Value Profile="(Default)">https://github.com/farukcan/visualps</Value>
+    </Setting>
+  </Settings>
 </SettingsFile>

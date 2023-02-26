@@ -9,7 +9,7 @@ namespace Visual_PowerShell.Helpers
 {
     public static class Prompt
     {
-        public static string ShowDialog(string text, string caption,string buttonText= "Save")
+        public static string ShowDialog(string text, string caption,string buttonText= "Save",string defaultvalue="")
         {
             Form prompt = new Form()
             {
@@ -20,7 +20,7 @@ namespace Visual_PowerShell.Helpers
                 StartPosition = FormStartPosition.CenterScreen
             };
             Label textLabel = new Label() { Left = 10, Top = 10, Width = 400, Text = text };
-            TextBox textBox = new TextBox() { Left = 10, Top = 30, Width = 400 };
+            TextBox textBox = new TextBox() { Left = 10, Top = 30, Width = 400, Text= defaultvalue };
             Button confirmation = new Button() { Text = buttonText, Left = 10, Width = 100, Top = 60, DialogResult = DialogResult.OK };
             confirmation.Click += (sender, e) => { prompt.Close(); };
             prompt.Controls.Add(textBox);

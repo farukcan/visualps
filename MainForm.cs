@@ -22,6 +22,11 @@ using Visual_PowerShell.Models;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using Command = Visual_PowerShell.Models.Command;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
+using System.Speech.Synthesis;
+using Prompt = Visual_PowerShell.Helpers.Prompt;
+using System.Drawing.Printing;
 
 namespace Visual_PowerShell
 {
@@ -107,7 +112,58 @@ namespace Visual_PowerShell
         private async void Form_Load(object sender, EventArgs e)
         {
             workplaceInput.Text = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            if( !string.IsNullOrEmpty(Properties.Settings.Default.Workspace))
+            {
+                workplaceInput.Text = Properties.Settings.Default.Workspace;
+            }
+            packageList.Text = Properties.Settings.Default.RepositoryPackages;
+            await LoadRepositoriesFromSettings();
             await RetreivePackages();
+            SetRepositoryIndex(Properties.Settings.Default.RepositoryIndex);
+            backToCommands.Checked = Properties.Settings.Default.BackToCommands;
+            defaultAuthor.Text = Properties.Settings.Default.DefaultAuthor;
+            defaultWebsite.Text = Properties.Settings.Default.DefaultWebsite;
+        }
+        async Task LoadRepositoriesFromSettings()
+        {
+            // split do lines
+            var addresses = Properties.Settings.Default.CommandRepositories.Split(
+                new string[] { "\r\n", "\r", "\n" },
+                StringSplitOptions.None
+            );
+            foreach ( var address in addresses )
+            {
+                if (address.StartsWith("http"))
+                {
+                    await LoadFromURL(address);
+                }
+                else
+                {
+                    if (File.Exists(address))
+                    {
+                        LoadFile(address);
+                    }
+                }
+            }
+        }
+        void SaveSettings()
+        {
+            StringBuilder repoAdresses = new StringBuilder();
+            foreach(Repository repository in commandRepositories )
+            {
+                if (repository.Address.StartsWith("http") || File.Exists(repository.Address))
+                {
+                    repoAdresses.AppendLine(repository.Address);
+                }
+            }
+            Properties.Settings.Default.CommandRepositories = repoAdresses.ToString();
+            Properties.Settings.Default.RepositoryPackages = packageList.Text;
+            Properties.Settings.Default.Workspace = workplaceInput.Text;
+            Properties.Settings.Default.RepositoryIndex = repositoryList.SelectedIndex;
+            Properties.Settings.Default.BackToCommands = backToCommands.Checked;
+            Properties.Settings.Default.DefaultAuthor = defaultAuthor.Text;
+            Properties.Settings.Default.DefaultWebsite = defaultWebsite.Text;
+            Properties.Settings.Default.Save();
         }
         private void UpdateRepositoryList()
         {
@@ -131,11 +187,12 @@ namespace Visual_PowerShell
         private void newRepoButton_Click(object sender, EventArgs e)
         {
             string promptValue = Prompt.ShowDialog("Repository Name", "New Repository","Create");
+            if (string.IsNullOrEmpty(promptValue)) return;
             commandRepositories.Insert(0,new Repository()
             {
                 Name = promptValue,
-                Author = "Your Name",
-                Website = "https://yoursite.com",
+                Author = defaultAuthor.Text,
+                Website = defaultWebsite.Text,
                 Address = "Do not forget to save!"
             });
             UpdateRepositoryList();
@@ -153,6 +210,7 @@ namespace Visual_PowerShell
         private void addLocal_Click(object sender, EventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog();
+            dialog.Multiselect = true;
             dialog.Title = "Load Local JSON";
             dialog.DefaultExt = "json";
             dialog.Filter = "JSON files (*.json)|*.json";
@@ -161,25 +219,42 @@ namespace Visual_PowerShell
             dialog.ShowDialog();
             try
             {
-                using (StreamReader reader = new StreamReader(dialog.FileName))
+                foreach(var fileName in dialog.FileNames)
                 {
-                    string json = reader.ReadToEnd();
-                    Repository repository = JsonConvert.DeserializeObject<Repository>(json);
-                    repository.Address = dialog.FileName;
-                    commandRepositories.Insert(0, repository);
-                    UpdateRepositoryList();
-                    SetRepositoryIndex(0);
+                    LoadFile(fileName);
                 }
             }catch (Exception exception)
             {
                 MessageBox.Show(exception.Message);
             }
         }
+        void LoadFile(string fileName)
+        {
+            using (StreamReader reader = new StreamReader(fileName))
+            {
+                string json = reader.ReadToEnd();
+                Repository repository = JsonConvert.DeserializeObject<Repository>(json);
+                repository.Address = fileName;
+                int updateRepositoryIndex = commandRepositories.FindLastIndex((r)=>r.Address==repository.Address);
+                if(updateRepositoryIndex!= -1)
+                {
+                    commandRepositories[updateRepositoryIndex] = repository;
+                }
+                else
+                {
+                    commandRepositories.Add(repository);
+                }
+                UpdateRepositoryList();
+                SetRepositoryIndex(commandRepositories.Count-1);
+            }
+        }
 
         private async void addRemote_Click(object sender, EventArgs e)
         {
-            string prompValue = Prompt.ShowDialog("JSON URL (Gist, API, CDN)", "Download Remote JSON","Download");
-            await LoadFromURL(prompValue,true);
+            string promptValue = Prompt.ShowDialog("JSON URL (Gist, API, CDN)", "Download Remote JSON","Download");
+            if (string.IsNullOrEmpty(promptValue)) return;
+
+            await LoadFromURL(promptValue,true);
         }
         private async Task LoadFromURL(string url,bool setRepoIndex=false)
         {
@@ -191,9 +266,17 @@ namespace Visual_PowerShell
                     var json = await response.Content.ReadAsStringAsync();
                     Repository repository = JsonConvert.DeserializeObject<Repository>(json);
                     repository.Address = url;
-                    commandRepositories.Insert(0, repository);
+                    int updateRepositoryIndex = commandRepositories.FindLastIndex((r) => r.Address == repository.Address);
+                    if (updateRepositoryIndex != -1)
+                    {
+                        commandRepositories[updateRepositoryIndex] = repository;
+                    }
+                    else
+                    {
+                        commandRepositories.Add(repository);
+                    }
                     UpdateRepositoryList();
-                    if(setRepoIndex) SetRepositoryIndex(0);
+                    if(setRepoIndex) SetRepositoryIndex(commandRepositories.Count-1);
                 }
             }
             catch (Exception exception)
@@ -210,7 +293,7 @@ namespace Visual_PowerShell
                 url = url.Replace("https://gist.github.com/", "https://gist.githubusercontent.com/");
                 if (!url.Contains("/raw"))
                 {
-                    url = url + (url.EndsWith("/") ? "raw?update" : "/raw?update");
+                    url = url + (url.EndsWith("/") ? "raw?update=" : "/raw?update=") +DateTime.Now.ToFileTime();
                 }
             }
             return url;
@@ -241,7 +324,7 @@ namespace Visual_PowerShell
                 }
                 catch(Exception exception)
                 {
-                    // Do nothing
+                    MessageBox.Show(exception.Message);
                 }
             }
             UpdateRepositoryList();
@@ -252,6 +335,8 @@ namespace Visual_PowerShell
             if (repositoryList.SelectedItem is null) return;
             var repo = commandRepositories[repositoryList.SelectedIndex];
             string promptText = Prompt.ShowDialog("Enter command name", "New command", "Create");
+            if (string.IsNullOrEmpty(promptText)) return;
+
             repo.Commands.Add(new Command()
             {
                 Name= promptText,
@@ -278,9 +363,18 @@ namespace Visual_PowerShell
             dialog.Title = "Save Repository as JSON File";
             dialog.DefaultExt = "json";
             dialog.Filter = "JSON files (*.json)|*.json";
+            if( !repo.Address.StartsWith("http") && File.Exists(repo.Address))
+            {
+                dialog.InitialDirectory = Path.GetDirectoryName(repo.Address);
+                dialog.FileName= Path.GetFileName(repo.Address);
+            }
             dialog.CheckPathExists= true;
             dialog.ShowDialog(this);
+            if (string.IsNullOrEmpty(dialog.FileName)) return;
             repo.Address= dialog.FileName;
+            repo.Author = authorInput.Text;
+            repo.Name = repoNameInput.Text;
+            repo.Website = websiteInput.Text;
             // Write
             TextWriter txt = new StreamWriter(dialog.FileName);
             var json = JsonConvert.SerializeObject(repo, Formatting.Indented);
@@ -312,6 +406,7 @@ namespace Visual_PowerShell
             var repo = commandRepositories[repositoryList.SelectedIndex];
             var command = repo.Commands[commandList.SelectedIndex];
             string promptText = Prompt.ShowDialog("Enter script ; {text:YourTextInput} , {file:YourFileInput} , {save:YourFileInput}", "New script", "Create");
+            if (string.IsNullOrEmpty(promptText)) return;
             command.Scripts.Add(promptText);
             UpdateScripts();
         }
@@ -321,6 +416,8 @@ namespace Visual_PowerShell
             Launch();
         }
         PowerShell _ps;
+        List<string> scripts = new List<string>();
+        int runningScriptIndex = 0;
         private void Launch()
         {
             if (repositoryList.SelectedItem is null) return;
@@ -328,19 +425,73 @@ namespace Visual_PowerShell
             var repo = commandRepositories[repositoryList.SelectedIndex];
             var command = repo.Commands[commandList.SelectedIndex];
             LaunchingMode();
-            PowerShell ps = PowerShell.Create();
-            _ps = ps;
-            ps.AddScript("cd " + workplaceInput.Text);
-            int i = 0;
+
+            scripts.Clear();
+            runningScriptIndex = 0;
             terminalArea.Text += $"\r\n     -----------";
             terminalArea.Text += $"\r\n     Directory: {workplaceInput.Text}";
+            int i = 0;
             foreach (var script in command.Scripts)
             {
                 i++;
                 terminalArea.Text += $"\r\n     {i})   "  + script;
-                ps.AddScript(script);
+                scripts.Add(script);
             }
             terminalArea.Text += $"\r\n     ----------- \r\n";
+            ScrollTerminalArea();
+            RunScripts();
+        }
+
+        private void RunScripts()
+        {
+            PowerShell ps = PowerShell.Create();
+            ps.AddScript($"Set-Location {workplaceInput.Text}");
+            var regex = new Regex(@"\{.*:.*\}");
+            var matches = regex.Matches(scripts[runningScriptIndex]).Distinct(new RegexMatchComparer());
+            foreach (Match match in matches)
+            {
+                var type = match.Value.Split(':')[0].TrimStart('{').ToLower();
+                var key = match.Value.Split(':')[1].TrimEnd('}');
+                string value = string.Empty;
+                switch (type)
+                {
+                    case "text":
+                        value = Prompt.ShowDialog(key, "Enter text", "Enter");
+                        break;
+                    case "file":
+                        var fileDialog = new OpenFileDialog();
+                        fileDialog.Title = $"Open {key}";
+                        fileDialog.DefaultExt= "file" ;
+                        fileDialog.ShowDialog();
+                        value = fileDialog.FileName;
+                        break;
+                    case "save":
+                        var saveDialog = new SaveFileDialog();
+                        saveDialog.Title = $"Save {key}";
+                        saveDialog.DefaultExt = "file";
+                        saveDialog.Filter = "All files (*.*)|*.*";
+                        saveDialog.ShowDialog();
+                        value = saveDialog.FileName;
+                        break;
+                    case "folder":
+                        var folderDialog = new FolderBrowserDialog();
+                        folderDialog.Description = $"Select Folder '{key}'";
+                        folderDialog.ShowDialog();
+                        value = folderDialog.SelectedPath;
+                        break;
+                    default:
+                        MessageBox.Show("Unknown Prompt Type : " + type);
+                        break;
+                }
+                for(int i=runningScriptIndex; i < scripts.Count; i++)
+                {
+                    scripts[i] = scripts[i].Replace(match.Value, value);
+                }
+            }
+            var script = scripts[runningScriptIndex];
+            runningScriptIndex++;
+            ps.AddScript(script);
+            _ps = ps;
             ps.AddCommand("Out-String").AddParameter("Stream", true);
 
             var output = new PSDataCollection<string>();
@@ -352,7 +503,7 @@ namespace Visual_PowerShell
             BackgroundWorker worker = new BackgroundWorker();
             worker.DoWork += (obj, args) =>
             {
-                while ( ! (asyncToken.IsCompleted || ps.HadErrors) )
+                while (!(asyncToken.IsCompleted || ps.HadErrors))
                 {
                     Thread.Sleep(100);
                 }
@@ -362,9 +513,26 @@ namespace Visual_PowerShell
                     {
                         terminalArea.Text += "\r\n" + errorRecord.ToString();
                     }
+                    terminalArea.Text += $"\r\n  ({runningScriptIndex}/{scripts.Count} Failed: {script})";
+                }
+                else
+                {
+                    terminalArea.Text += $"\r\n  ({runningScriptIndex}/{scripts.Count} Success: {script})";
                 }
                 ScrollTerminalArea();
-                LaunchFreeMode();
+                if (runningScriptIndex< scripts.Count && !ps.HadErrors)
+                {
+                    RunScripts();
+                }
+                else
+                {
+                    LaunchFreeMode();
+                    if (backToCommands.Checked && !ps.HadErrors)
+                    {
+                        Thread.Sleep(1000);
+                        launcherTabs.SelectedTab = commandsTab;
+                    }
+                }
             };
             worker.RunWorkerAsync();
         }
@@ -400,7 +568,6 @@ namespace Visual_PowerShell
             if (result == DialogResult.OK)
             {
                 workplaceInput.Text = folderDialog.SelectedPath;
-                Environment.SpecialFolder root = folderDialog.RootFolder;
             }
         }
 
@@ -439,6 +606,175 @@ namespace Visual_PowerShell
         private void launchOnDoubleClick(object sender, EventArgs e)
         {
             Launch();
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            SaveSettings();
+        }
+
+        private void scriptList_DoubleClick(object sender, EventArgs e)
+        {
+            if (repositoryList.SelectedItem is null) return;
+            if (commandList.SelectedItem is null) return;
+            if(scriptList.SelectedItem is null) return;
+            var repo = commandRepositories[repositoryList.SelectedIndex];
+            var command = repo.Commands[commandList.SelectedIndex];
+            var script = command.Scripts[scriptList.SelectedIndex];
+            string newValue = Prompt.ShowDialog("Enter scripts", "Edit script", "Edit", script);
+            command.Scripts[scriptList.SelectedIndex] = newValue;
+            UpdateScripts();
+        }
+
+        private void commandUp_Click(object sender, EventArgs e)
+        {
+            if (repositoryList.SelectedItem is null) return;
+            if (commandList.SelectedItem is null) return;
+            if (commandList.SelectedIndex < 1) return;
+            var repo = commandRepositories[repositoryList.SelectedIndex];
+            int index = commandList.SelectedIndex;
+            var swap = repo.Commands[index];
+            repo.Commands[index] = repo.Commands[index - 1];
+            repo.Commands[index - 1] = swap;
+            UpdateCommandList();
+            SetCommandIndex(index - 1);
+        }
+
+        private void commandDown_Click(object sender, EventArgs e)
+        {
+            if (repositoryList.SelectedItem is null) return;
+            if (commandList.SelectedItem is null) return;
+            var repo = commandRepositories[repositoryList.SelectedIndex];
+            int index = commandList.SelectedIndex;
+            if (index >= (repo.Commands.Count - 1)) return;
+            var swap = repo.Commands[index];
+            repo.Commands[index] = repo.Commands[index + 1];
+            repo.Commands[index + 1] = swap;
+            UpdateCommandList();
+            SetCommandIndex(index + 1);
+        }
+
+        private void scriptUp_Click(object sender, EventArgs e)
+        {
+            if (repositoryList.SelectedItem is null) return;
+            if (commandList.SelectedItem is null) return;
+            if (scriptList.SelectedItem is null) return;
+            var repo = commandRepositories[repositoryList.SelectedIndex];
+            var command = repo.Commands[commandList.SelectedIndex];
+            int index = scriptList.SelectedIndex;
+            if(index<1) return;
+            var swap = command.Scripts[index];
+            command.Scripts[index] = command.Scripts[index - 1];
+            command.Scripts[index - 1] = swap;
+            UpdateScripts();
+            scriptList.SelectedIndex = index - 1;
+        }
+
+        private void scriptDown_Click(object sender, EventArgs e)
+        {
+            if (repositoryList.SelectedItem is null) return;
+            if (commandList.SelectedItem is null) return;
+            if (scriptList.SelectedItem is null) return;
+            var repo = commandRepositories[repositoryList.SelectedIndex];
+            var command = repo.Commands[commandList.SelectedIndex];
+            int index = scriptList.SelectedIndex;
+            if (index >= (command.Scripts.Count - 1)) return;
+            var swap = command.Scripts[index];
+            command.Scripts[index] = command.Scripts[index + 1];
+            command.Scripts[index + 1] = swap;
+            UpdateScripts();
+            scriptList.SelectedIndex = index + 1;
+        }
+
+        private void repoUp_Click(object sender, EventArgs e)
+        {
+            if (repositoryList.SelectedItem is null) return;
+            int index = repositoryList.SelectedIndex;
+            if (index < 1) return;
+            var swap = commandRepositories[index];
+            commandRepositories[index] = commandRepositories[index - 1];
+            commandRepositories[index - 1] = swap;
+            UpdateRepositoryList();
+            SetRepositoryIndex(index - 1);
+        }
+
+        private void repoDown_Click(object sender, EventArgs e)
+        {
+            if (repositoryList.SelectedItem is null) return;
+            int index = repositoryList.SelectedIndex;
+            if (index >= (commandRepositories.Count - 1)) return;
+            var swap = commandRepositories[index];
+            commandRepositories[index] = commandRepositories[index + 1];
+            commandRepositories[index + 1] = swap;
+            UpdateRepositoryList();
+            SetRepositoryIndex(index + 1);
+        }
+
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            OpenURL("https://github.com/farukcan/visualps");
+        }
+
+        private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            OpenURL("https://github.com/farukcan/visualps/issues");
+        }
+
+        void OpenURL(string url)
+        {
+            Process.Start(new ProcessStartInfo(url)
+            {
+                UseShellExecute = true
+            });
+        }
+
+        private void repositoryList_DoubleClick(object sender, EventArgs e)
+        {
+            // open repo address URL
+            if (repositoryList.SelectedItem is null) return;
+            var repo = commandRepositories[repositoryList.SelectedIndex];
+            // if starts with http
+            if(repo.Address.StartsWith("http"))
+            {
+                OpenURL(repo.Address);
+            }
+        }
+
+        private void MainForm_Resize(object sender, EventArgs e)
+        {
+            if (this.WindowState == FormWindowState.Minimized && trayEnabled.Checked)
+            {
+                SaveSettings();
+                Hide();
+                notifyIcon.Visible = true;
+                notifyIcon.ShowBalloonTip(3000, "I'm here!", "Visual Powershell minimized.", ToolTipIcon.Info);
+            }
+        }
+
+        private void notifyIcon_MouseClick(object sender, MouseEventArgs e)
+        {
+            TrayIconClick();
+        }
+
+        private void notifyIcon_MouseClick(object sender, EventArgs e)
+        {
+            TrayIconClick();
+        }
+        void TrayIconClick()
+        {
+            Show();
+            this.WindowState = FormWindowState.Normal;
+            notifyIcon.Visible = false;
+        }
+
+        private void notifyIcon_BalloonTipClicked(object sender, EventArgs e)
+        {
+            TrayIconClick();
+        }
+
+        private void MainForm_Deactivate(object sender, EventArgs e)
+        {
+            SaveSettings();
         }
     }
 }
