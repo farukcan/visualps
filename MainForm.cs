@@ -564,6 +564,7 @@ namespace Visual_PowerShell
             // Select Folder
             FolderBrowserDialog folderDialog = new FolderBrowserDialog();
             folderDialog.ShowNewFolderButton = true;
+            folderDialog.InitialDirectory = workplaceInput.Text;
             DialogResult result = folderDialog.ShowDialog();
             if (result == DialogResult.OK)
             {
@@ -622,6 +623,7 @@ namespace Visual_PowerShell
             var command = repo.Commands[commandList.SelectedIndex];
             var script = command.Scripts[scriptList.SelectedIndex];
             string newValue = Prompt.ShowDialog("Enter scripts", "Edit script", "Edit", script);
+            if (string.IsNullOrEmpty(newValue)) return;
             command.Scripts[scriptList.SelectedIndex] = newValue;
             UpdateScripts();
         }
