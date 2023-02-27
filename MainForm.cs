@@ -899,6 +899,11 @@ namespace Visual_PowerShell
         private void terminalArea_KeyDown(object sender, KeyEventArgs e)
         {
             switch (e.KeyCode){
+                case Keys.Subtract:
+                case Keys.Back:
+                case Keys.Delete:
+                    terminalArea.Text = string.Empty;
+                    break;
                 case Keys.Escape:
                     Cancel();
                     commandList.Focus();
