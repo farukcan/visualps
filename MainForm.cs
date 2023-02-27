@@ -461,7 +461,6 @@ namespace Visual_PowerShell
         private void RunScripts()
         {
             PowerShell ps = PowerShell.Create();
-            ps.AddScript($"Set-Location {workplaceInput.Text}");
             var regex = new Regex(@"\{.*?:.*?\}");
             var matches = regex.Matches(scripts[runningScriptIndex]).Distinct(new RegexMatchComparer());
             foreach (Match match in matches)
@@ -506,7 +505,7 @@ namespace Visual_PowerShell
             }
             var script = scripts[runningScriptIndex];
             runningScriptIndex++;
-            ps.Commands.Clear();
+            ps.AddScript($"Set-Location -Path '{workplaceInput.Text}'");
             ps.AddScript(script);
             _ps = ps;
             ps.AddCommand("Out-String").AddParameter("Stream", true);
@@ -573,7 +572,7 @@ namespace Visual_PowerShell
 
         private void workplaceInput_TextChanged(object sender, EventArgs e)
         {
-
+            this.Text = "Visual PowerShell - " + workplaceInput.Text;
         }
 
         private void selectFolder_Click(object sender, EventArgs e)
