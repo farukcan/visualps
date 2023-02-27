@@ -123,6 +123,7 @@ namespace Visual_PowerShell
             backToCommands.Checked = Properties.Settings.Default.BackToCommands;
             defaultAuthor.Text = Properties.Settings.Default.DefaultAuthor;
             defaultWebsite.Text = Properties.Settings.Default.DefaultWebsite;
+            commandList.Focus();
         }
         async Task LoadRepositoriesFromSettings()
         {
@@ -209,6 +210,10 @@ namespace Visual_PowerShell
 
         private void addLocal_Click(object sender, EventArgs e)
         {
+            OpenFile();
+        }
+        void OpenFile()
+        {
             OpenFileDialog dialog = new OpenFileDialog();
             dialog.Multiselect = true;
             dialog.Title = "Load Local JSON";
@@ -219,11 +224,12 @@ namespace Visual_PowerShell
             dialog.ShowDialog();
             try
             {
-                foreach(var fileName in dialog.FileNames)
+                foreach (var fileName in dialog.FileNames)
                 {
                     LoadFile(fileName);
                 }
-            }catch (Exception exception)
+            }
+            catch (Exception exception)
             {
                 MessageBox.Show(exception.Message);
             }
@@ -343,6 +349,7 @@ namespace Visual_PowerShell
                 Scripts = new List<string> { }
             });
             UpdateCommandList();
+            SetCommandIndex(repo.Commands.Count - 1);
         }
 
         private void deleteCommand_Click(object sender, EventArgs e)
@@ -357,21 +364,25 @@ namespace Visual_PowerShell
 
         private void saveRepo_Click(object sender, EventArgs e)
         {
+            SaveRepository();
+        }
+        void SaveRepository()
+        {
             if (repositoryList.SelectedItem is null) return;
             var repo = commandRepositories[repositoryList.SelectedIndex];
             SaveFileDialog dialog = new SaveFileDialog();
             dialog.Title = "Save Repository as JSON File";
             dialog.DefaultExt = "json";
             dialog.Filter = "JSON files (*.json)|*.json";
-            if( !repo.Address.StartsWith("http") && File.Exists(repo.Address))
+            if (!repo.Address.StartsWith("http") && File.Exists(repo.Address))
             {
                 dialog.InitialDirectory = Path.GetDirectoryName(repo.Address);
-                dialog.FileName= Path.GetFileName(repo.Address);
+                dialog.FileName = Path.GetFileName(repo.Address);
             }
-            dialog.CheckPathExists= true;
+            dialog.CheckPathExists = true;
             dialog.ShowDialog(this);
             if (string.IsNullOrEmpty(dialog.FileName)) return;
-            repo.Address= dialog.FileName;
+            repo.Address = dialog.FileName;
             repo.Author = authorInput.Text;
             repo.Name = repoNameInput.Text;
             repo.Website = websiteInput.Text;
@@ -409,6 +420,7 @@ namespace Visual_PowerShell
             if (string.IsNullOrEmpty(promptText)) return;
             command.Scripts.Add(promptText);
             UpdateScripts();
+            scriptList.SelectedIndex = command.Scripts.Count - 1;
         }
 
         private void launchButton_Click(object sender, EventArgs e)
@@ -424,8 +436,12 @@ namespace Visual_PowerShell
             if (commandList.SelectedItem is null) return;
             var repo = commandRepositories[repositoryList.SelectedIndex];
             var command = repo.Commands[commandList.SelectedIndex];
+            if (command.Scripts.Count == 0)
+            {
+                MessageBox.Show("Please add scripts to the commands.");
+                return;
+            }
             LaunchingMode();
-
             scripts.Clear();
             runningScriptIndex = 0;
             terminalArea.Text += $"\r\n     -----------";
@@ -446,7 +462,7 @@ namespace Visual_PowerShell
         {
             PowerShell ps = PowerShell.Create();
             ps.AddScript($"Set-Location {workplaceInput.Text}");
-            var regex = new Regex(@"\{.*:.*\}");
+            var regex = new Regex(@"\{.*?:.*?\}");
             var matches = regex.Matches(scripts[runningScriptIndex]).Distinct(new RegexMatchComparer());
             foreach (Match match in matches)
             {
@@ -490,6 +506,7 @@ namespace Visual_PowerShell
             }
             var script = scripts[runningScriptIndex];
             runningScriptIndex++;
+            ps.Commands.Clear();
             ps.AddScript(script);
             _ps = ps;
             ps.AddCommand("Out-String").AddParameter("Stream", true);
@@ -574,7 +591,11 @@ namespace Visual_PowerShell
 
         private void cancelButtons_Click(object sender, EventArgs e)
         {
-            if(_ps is not null)
+            Cancel();
+        }
+        void Cancel()
+        {
+            if (_ps is not null)
             {
                 terminalArea.Text += $"\r\n  (Cancelled Manually)";
                 _ps.Stop();
@@ -616,9 +637,14 @@ namespace Visual_PowerShell
 
         private void scriptList_DoubleClick(object sender, EventArgs e)
         {
+            EditScript();
+        }
+
+        void EditScript()
+        {
             if (repositoryList.SelectedItem is null) return;
             if (commandList.SelectedItem is null) return;
-            if(scriptList.SelectedItem is null) return;
+            if (scriptList.SelectedItem is null) return;
             var repo = commandRepositories[repositoryList.SelectedIndex];
             var command = repo.Commands[commandList.SelectedIndex];
             var script = command.Scripts[scriptList.SelectedIndex];
@@ -777,6 +803,235 @@ namespace Visual_PowerShell
         private void MainForm_Deactivate(object sender, EventArgs e)
         {
             SaveSettings();
+        }
+
+        private void commandList_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
+            {
+                case Keys.F1:
+                    SetRepositoryIndex(0);
+                    break;
+                case Keys.F2:
+                    SetRepositoryIndex(1);
+                    break;
+                case Keys.F3:
+                    SetRepositoryIndex(2);
+                    break;
+                case Keys.F4:
+                    SetRepositoryIndex(3);
+                    break;
+                case Keys.F5:
+                    SetRepositoryIndex(4);
+                    break;
+                case Keys.F6:
+                    SetRepositoryIndex(5);
+                    break;
+                case Keys.F7:
+                    SetRepositoryIndex(6);
+                    break;
+                case Keys.F8:
+                    SetRepositoryIndex(7);
+                    break;
+                case Keys.F9:
+                    SetRepositoryIndex(8);
+                    break;
+                case Keys.D1:
+                    SetCommandIndex(0);
+                    break;
+                case Keys.D2:
+                    SetCommandIndex(1);
+                    break;
+                case Keys.D3:
+                    SetCommandIndex(2);
+                    break;
+                case Keys.D4:
+                    SetCommandIndex(3);
+                    break;
+                case Keys.D5:
+                    SetCommandIndex(4);
+                    break;
+                case Keys.D6:
+                    SetCommandIndex(5);
+                    break;
+                case Keys.D7:
+                    SetCommandIndex(6);
+                    break;
+                case Keys.D8:
+                    SetCommandIndex(7);
+                    break;
+                case Keys.D9:
+                    SetCommandIndex(8);
+                    break;
+                case Keys.Enter:
+                case Keys.Space:
+                    Launch();
+                    break;
+                case Keys.W:
+                    SetCommandIndex(commandList.SelectedIndex - 1);
+                    break;
+                case Keys.S:
+                    SetCommandIndex(commandList.SelectedIndex + 1);
+                    break;
+                case Keys.Q:
+                case Keys.A:
+                    launcherTabs.SelectedTab = terminal;
+                    break;
+                case Keys.E:
+                case Keys.D:
+                    if(((Control)scriptsTab).Enabled){
+                        launcherTabs.SelectedTab = scriptsTab;
+                    }else{
+                        launcherTabs.SelectedTab = terminal;
+                    }
+                    break;
+                case Keys.Subtract:
+                case Keys.Delete:
+                    deleteCommand.PerformClick();
+                    break;
+                case Keys.Add:
+                    newCommand.PerformClick();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private void terminalArea_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode){
+                case Keys.Escape:
+                    Cancel();
+                    commandList.Focus();
+                    break;
+                case Keys.Enter:
+                case Keys.E:
+                case Keys.D:
+                case Keys.Space:
+                    launcherTabs.SelectedTab = commandsTab;
+                    commandList.Focus();
+                    break;
+                case Keys.Q:
+                case Keys.A:
+                    if(((Control)scriptsTab).Enabled){
+                        launcherTabs.SelectedTab = scriptsTab;
+                    }else{
+                        launcherTabs.SelectedTab = commandsTab;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private void launcherTabs_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            FocusLists();
+        }
+
+        void FocusLists(){
+            if(launcherTabs.SelectedTab == commandsTab)
+            {
+                commandList.Focus();
+            }else if(launcherTabs.SelectedTab == terminal)
+            {
+                terminalArea.Focus();
+            }else if(launcherTabs.SelectedTab == scriptsTab)
+            {
+                scriptList.Focus();
+            }
+        }
+
+        private void mainTabControl_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (mainTabControl.SelectedTab == launcher)
+            { 
+                FocusLists();
+            }else if(mainTabControl.SelectedTab == repositories)
+            {
+                repositoryList.Focus();
+            }
+        }
+
+        void SetScriptIndex(int index){
+            if (index >= 0 && index < scriptList.Items.Count){
+                scriptList.SelectedIndex = index;
+            }
+        }
+
+        private void scriptList_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
+            {
+                case Keys.Enter:
+                case Keys.Space:
+                    EditScript();
+                    break;
+                case Keys.Subtract:
+                case Keys.Delete:
+                    deleteScript.PerformClick();
+                    break;
+                case Keys.Add:
+                    newScript.PerformClick();
+                    break;
+                case Keys.W:
+                    SetScriptIndex(scriptList.SelectedIndex - 1);
+                    break;
+                case Keys.S:
+                    SetScriptIndex(scriptList.SelectedIndex + 1);
+                    break;
+                case Keys.Q:
+                case Keys.A:
+                    launcherTabs.SelectedTab = commandsTab;
+                    break;
+                case Keys.E:
+                case Keys.D:
+                    launcherTabs.SelectedTab = terminal;
+                    break;
+            }
+        }
+
+        private void repositoryList_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
+            {
+                case Keys.Subtract:
+                case Keys.Delete:
+                    deleteRepo.PerformClick();
+                    break;
+                case Keys.Add:
+                    newRepoButton.PerformClick();
+                    break;
+                case Keys.W:
+                    SetRepositoryIndex(repositoryList.SelectedIndex - 1);
+                    break;
+                case Keys.S:
+                    SetRepositoryIndex(repositoryList.SelectedIndex + 1);
+                    break;
+            }
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            switch (keyData)
+            {
+                case Keys.Control | Keys.S:
+                    SaveRepository();
+                    break;
+                case Keys.Control | Keys.O:
+                    OpenFile();
+                    break;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void MainForm_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.S)       // Ctrl-S Save
+            {
+                saveRepo.PerformClick();
+                e.SuppressKeyPress = true;  // Stops other controls on the form receiving event.
+            }
         }
     }
 }
