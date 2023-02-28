@@ -534,11 +534,11 @@ namespace Visual_PowerShell
                     {
                         terminalArea.Text += "\r\n" + errorRecord.ToString();
                     }
-                    terminalArea.Text += $"\r\n  ({runningScriptIndex}/{scripts.Count} Failed: {script})";
+                    terminalArea.Text += $"\r\n     ---\r\n  ({runningScriptIndex}/{scripts.Count} Failed: {script})";
                 }
                 else
                 {
-                    terminalArea.Text += $"\r\n  ({runningScriptIndex}/{scripts.Count} Success: {script})";
+                    terminalArea.Text += $"\r\n     ---\r\n ({runningScriptIndex}/{scripts.Count} Success: {script})";
                 }
                 ScrollTerminalArea();
                 if (runningScriptIndex< scripts.Count && !ps.HadErrors)
