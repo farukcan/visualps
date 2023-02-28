@@ -118,12 +118,12 @@ namespace Visual_PowerShell
                 workplaceInput.Text = Properties.Settings.Default.Workspace;
             }
             packageList.Text = Properties.Settings.Default.RepositoryPackages;
-            await LoadRepositoriesFromSettings();
-            await RetreivePackages();
-            SetRepositoryIndex(Properties.Settings.Default.RepositoryIndex);
             backToCommands.Checked = Properties.Settings.Default.BackToCommands;
             defaultAuthor.Text = Properties.Settings.Default.DefaultAuthor;
             defaultWebsite.Text = Properties.Settings.Default.DefaultWebsite;
+            await LoadRepositoriesFromSettings();
+            await RetreivePackages();
+            SetRepositoryIndex(Properties.Settings.Default.RepositoryIndex);
             commandList.Focus();
         }
         async Task LoadRepositoriesFromSettings()
@@ -528,6 +528,10 @@ namespace Visual_PowerShell
                 {
                     Thread.Sleep(100);
                 }
+                foreach (var warningRecord in ps.Streams.Warning)
+                {
+                    terminalArea.Text += "\r\n" + warningRecord.ToString();
+                }
                 if (ps.HadErrors)
                 {
                     foreach (var errorRecord in ps.Streams.Error)
@@ -895,6 +899,17 @@ namespace Visual_PowerShell
                     break;
                 case Keys.Add:
                     newCommand.PerformClick();
+                    break;
+                case Keys.R:
+                    // rename command
+                    if (commandList.SelectedItem is null) return;
+                    var command = commandRepositories[repositoryList.SelectedIndex].Commands[commandList.SelectedIndex];
+                    (bool haveValue, string promptValue) = Prompt.ShowDialog("Enter commands name", "Rename " + command.Name, "Rename", command.Name);
+                    if (haveValue)
+                    {
+                        command.Name = promptValue;
+                        UpdateCommandList();
+                    }
                     break;
                 default:
                     break;

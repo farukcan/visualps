@@ -5,7 +5,11 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <ApplicationIcon>rocket_fill.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <Content Include="rocket_fill.ico" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Microsoft.PowerShell.Commands.Diagnostics" Version="7.3.3" />

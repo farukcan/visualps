@@ -99,6 +99,7 @@
             this.label7 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
+            this.label24 = new System.Windows.Forms.Label();
             this.mainTabControl.SuspendLayout();
             this.launcher.SuspendLayout();
             this.launcherTabs.SuspendLayout();
@@ -460,10 +461,10 @@
             this.terminal.Controls.Add(this.backToCommands);
             this.terminal.Controls.Add(this.cancelButtons);
             this.terminal.Controls.Add(this.terminalArea);
-            this.terminal.Location = new System.Drawing.Point(4, 27);
+            this.terminal.Location = new System.Drawing.Point(4, 24);
             this.terminal.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.terminal.Name = "terminal";
-            this.terminal.Size = new System.Drawing.Size(571, 602);
+            this.terminal.Size = new System.Drawing.Size(571, 605);
             this.terminal.TabIndex = 2;
             this.terminal.Text = "🖥️ Terminal";
             this.terminal.UseVisualStyleBackColor = true;
@@ -512,6 +513,7 @@
             this.terminalArea.Font = new System.Drawing.Font("Lucida Console", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.terminalArea.ForeColor = System.Drawing.SystemColors.HighlightText;
             this.terminalArea.Location = new System.Drawing.Point(0, 3);
+            this.terminalArea.MaxLength = 2100000;
             this.terminalArea.Multiline = true;
             this.terminalArea.Name = "terminalArea";
             this.terminalArea.ReadOnly = true;
@@ -724,6 +726,7 @@
             // 
             // about
             // 
+            this.about.Controls.Add(this.label24);
             this.about.Controls.Add(this.label23);
             this.about.Controls.Add(this.label22);
             this.about.Controls.Add(this.label21);
@@ -752,7 +755,7 @@
             // label23
             // 
             this.label23.AutoSize = true;
-            this.label23.Location = new System.Drawing.Point(29, 571);
+            this.label23.Location = new System.Drawing.Point(19, 552);
             this.label23.Name = "label23";
             this.label23.Size = new System.Drawing.Size(413, 18);
             this.label23.TabIndex = 17;
@@ -761,7 +764,7 @@
             // label22
             // 
             this.label22.AutoSize = true;
-            this.label22.Location = new System.Drawing.Point(29, 544);
+            this.label22.Location = new System.Drawing.Point(19, 525);
             this.label22.Name = "label22";
             this.label22.Size = new System.Drawing.Size(356, 18);
             this.label22.TabIndex = 16;
@@ -770,7 +773,7 @@
             // label21
             // 
             this.label21.AutoSize = true;
-            this.label21.Location = new System.Drawing.Point(29, 516);
+            this.label21.Location = new System.Drawing.Point(19, 497);
             this.label21.Name = "label21";
             this.label21.Size = new System.Drawing.Size(271, 18);
             this.label21.TabIndex = 15;
@@ -779,7 +782,7 @@
             // label20
             // 
             this.label20.AutoSize = true;
-            this.label20.Location = new System.Drawing.Point(29, 488);
+            this.label20.Location = new System.Drawing.Point(19, 469);
             this.label20.Name = "label20";
             this.label20.Size = new System.Drawing.Size(401, 18);
             this.label20.TabIndex = 14;
@@ -788,7 +791,7 @@
             // label19
             // 
             this.label19.AutoSize = true;
-            this.label19.Location = new System.Drawing.Point(29, 459);
+            this.label19.Location = new System.Drawing.Point(19, 440);
             this.label19.Name = "label19";
             this.label19.Size = new System.Drawing.Size(412, 18);
             this.label19.TabIndex = 13;
@@ -797,7 +800,7 @@
             // label18
             // 
             this.label18.AutoSize = true;
-            this.label18.Location = new System.Drawing.Point(29, 431);
+            this.label18.Location = new System.Drawing.Point(19, 412);
             this.label18.Name = "label18";
             this.label18.Size = new System.Drawing.Size(369, 18);
             this.label18.TabIndex = 12;
@@ -806,7 +809,7 @@
             // label17
             // 
             this.label17.AutoSize = true;
-            this.label17.Location = new System.Drawing.Point(29, 403);
+            this.label17.Location = new System.Drawing.Point(19, 384);
             this.label17.Name = "label17";
             this.label17.Size = new System.Drawing.Size(512, 18);
             this.label17.TabIndex = 11;
@@ -815,7 +818,7 @@
             // label16
             // 
             this.label16.AutoSize = true;
-            this.label16.Location = new System.Drawing.Point(29, 375);
+            this.label16.Location = new System.Drawing.Point(19, 356);
             this.label16.Name = "label16";
             this.label16.Size = new System.Drawing.Size(523, 18);
             this.label16.TabIndex = 10;
@@ -824,7 +827,7 @@
             // label15
             // 
             this.label15.AutoSize = true;
-            this.label15.Location = new System.Drawing.Point(29, 347);
+            this.label15.Location = new System.Drawing.Point(19, 328);
             this.label15.Name = "label15";
             this.label15.Size = new System.Drawing.Size(399, 18);
             this.label15.TabIndex = 9;
@@ -833,7 +836,7 @@
             // label14
             // 
             this.label14.AutoSize = true;
-            this.label14.Location = new System.Drawing.Point(29, 318);
+            this.label14.Location = new System.Drawing.Point(19, 299);
             this.label14.Name = "label14";
             this.label14.Size = new System.Drawing.Size(393, 18);
             this.label14.TabIndex = 8;
@@ -843,7 +846,7 @@
             // 
             this.label11.AutoSize = true;
             this.label11.Font = new System.Drawing.Font("Arial", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.label11.Location = new System.Drawing.Point(29, 191);
+            this.label11.Location = new System.Drawing.Point(19, 172);
             this.label11.Name = "label11";
             this.label11.Size = new System.Drawing.Size(143, 22);
             this.label11.TabIndex = 7;
@@ -852,7 +855,7 @@
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(29, 289);
+            this.label10.Location = new System.Drawing.Point(19, 270);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(373, 18);
             this.label10.TabIndex = 6;
@@ -902,7 +905,7 @@
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(29, 260);
+            this.label7.Location = new System.Drawing.Point(19, 241);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(240, 18);
             this.label7.TabIndex = 1;
@@ -911,7 +914,7 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(29, 227);
+            this.label6.Location = new System.Drawing.Point(19, 208);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(289, 18);
             this.label6.TabIndex = 0;
@@ -924,6 +927,15 @@
             this.notifyIcon.BalloonTipClicked += new System.EventHandler(this.notifyIcon_BalloonTipClicked);
             this.notifyIcon.Click += new System.EventHandler(this.notifyIcon_MouseClick);
             this.notifyIcon.MouseClick += new System.Windows.Forms.MouseEventHandler(this.notifyIcon_MouseClick);
+            // 
+            // label24
+            // 
+            this.label24.AutoSize = true;
+            this.label24.Location = new System.Drawing.Point(19, 579);
+            this.label24.Name = "label24";
+            this.label24.Size = new System.Drawing.Size(278, 18);
+            this.label24.TabIndex = 18;
+            this.label24.Text = "Press R to rename selected command.";
             // 
             // MainForm
             // 
@@ -1030,6 +1042,7 @@
         private System.Windows.Forms.Label label20;
         private System.Windows.Forms.Label label23;
         private System.Windows.Forms.Label colorPicker;
+        private System.Windows.Forms.Label label24;
     }
 }
 
