@@ -58,6 +58,7 @@
             this.deleteScript = new System.Windows.Forms.Button();
             this.scriptList = new System.Windows.Forms.ListBox();
             this.terminal = new System.Windows.Forms.TabPage();
+            this.colorPicker = new System.Windows.Forms.Label();
             this.backToCommands = new System.Windows.Forms.CheckBox();
             this.cancelButtons = new System.Windows.Forms.Button();
             this.terminalArea = new System.Windows.Forms.TextBox();
@@ -79,6 +80,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.packageList = new System.Windows.Forms.TextBox();
             this.about = new System.Windows.Forms.TabPage();
+            this.label23 = new System.Windows.Forms.Label();
             this.label22 = new System.Windows.Forms.Label();
             this.label21 = new System.Windows.Forms.Label();
             this.label20 = new System.Windows.Forms.Label();
@@ -97,7 +99,6 @@
             this.label7 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
-            this.label23 = new System.Windows.Forms.Label();
             this.mainTabControl.SuspendLayout();
             this.launcher.SuspendLayout();
             this.launcherTabs.SuspendLayout();
@@ -455,22 +456,37 @@
             // 
             // terminal
             // 
+            this.terminal.Controls.Add(this.colorPicker);
             this.terminal.Controls.Add(this.backToCommands);
             this.terminal.Controls.Add(this.cancelButtons);
             this.terminal.Controls.Add(this.terminalArea);
-            this.terminal.Location = new System.Drawing.Point(4, 24);
+            this.terminal.Location = new System.Drawing.Point(4, 27);
             this.terminal.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.terminal.Name = "terminal";
-            this.terminal.Size = new System.Drawing.Size(571, 605);
+            this.terminal.Size = new System.Drawing.Size(571, 602);
             this.terminal.TabIndex = 2;
             this.terminal.Text = "🖥️ Terminal";
             this.terminal.UseVisualStyleBackColor = true;
+            // 
+            // colorPicker
+            // 
+            this.colorPicker.AutoSize = true;
+            this.colorPicker.BackColor = System.Drawing.SystemColors.MenuHighlight;
+            this.colorPicker.Font = new System.Drawing.Font("Lucida Console", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.colorPicker.ForeColor = System.Drawing.SystemColors.HighlightText;
+            this.colorPicker.Location = new System.Drawing.Point(3, 568);
+            this.colorPicker.Name = "colorPicker";
+            this.colorPicker.Padding = new System.Windows.Forms.Padding(5, 5, 6, 6);
+            this.colorPicker.Size = new System.Drawing.Size(75, 30);
+            this.colorPicker.TabIndex = 16;
+            this.colorPicker.Text = "Style";
+            this.colorPicker.Click += new System.EventHandler(this.colorPicker_Click);
             // 
             // backToCommands
             // 
             this.backToCommands.AutoSize = true;
             this.backToCommands.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.backToCommands.Location = new System.Drawing.Point(4, 573);
+            this.backToCommands.Location = new System.Drawing.Point(84, 573);
             this.backToCommands.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.backToCommands.Name = "backToCommands";
             this.backToCommands.Size = new System.Drawing.Size(204, 20);
@@ -733,6 +749,15 @@
             this.about.Text = "ℹ️ About / Help";
             this.about.UseVisualStyleBackColor = true;
             // 
+            // label23
+            // 
+            this.label23.AutoSize = true;
+            this.label23.Location = new System.Drawing.Point(29, 571);
+            this.label23.Name = "label23";
+            this.label23.Size = new System.Drawing.Size(413, 18);
+            this.label23.TabIndex = 17;
+            this.label23.Text = "Press Backspace or Delete or - key to clear Terminal Area.";
+            // 
             // label22
             // 
             this.label22.AutoSize = true;
@@ -900,15 +925,6 @@
             this.notifyIcon.Click += new System.EventHandler(this.notifyIcon_MouseClick);
             this.notifyIcon.MouseClick += new System.Windows.Forms.MouseEventHandler(this.notifyIcon_MouseClick);
             // 
-            // label23
-            // 
-            this.label23.AutoSize = true;
-            this.label23.Location = new System.Drawing.Point(29, 571);
-            this.label23.Name = "label23";
-            this.label23.Size = new System.Drawing.Size(413, 18);
-            this.label23.TabIndex = 17;
-            this.label23.Text = "Press Backspace or Delete or - key to clear Terminal Area.";
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -1013,6 +1029,7 @@
         private System.Windows.Forms.Label label21;
         private System.Windows.Forms.Label label20;
         private System.Windows.Forms.Label label23;
+        private System.Windows.Forms.Label colorPicker;
     }
 }
 

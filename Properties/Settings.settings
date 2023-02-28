@@ -23,5 +23,11 @@
     <Setting Name="DefaultWebsite" Type="System.String" Scope="User">
       <Value Profile="(Default)">https://github.com/farukcan/visualps</Value>
     </Setting>
+    <Setting Name="TerminalBackgroundColor" Type="System.Drawing.Color" Scope="User">
+      <Value Profile="(Default)">MenuHighlight</Value>
+    </Setting>
+    <Setting Name="TerminalTextColor" Type="System.Drawing.Color" Scope="User">
+      <Value Profile="(Default)">White</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -106,5 +106,29 @@ namespace Visual_PowerShell.Properties {
                 this["DefaultWebsite"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("MenuHighlight")]
+        public global::System.Drawing.Color TerminalBackgroundColor {
+            get {
+                return ((global::System.Drawing.Color)(this["TerminalBackgroundColor"]));
+            }
+            set {
+                this["TerminalBackgroundColor"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("White")]
+        public global::System.Drawing.Color TerminalTextColor {
+            get {
+                return ((global::System.Drawing.Color)(this["TerminalTextColor"]));
+            }
+            set {
+                this["TerminalTextColor"] = value;
+            }
+        }
     }
 }

@@ -9,9 +9,22 @@ namespace Visual_PowerShell.Helpers
 {
     public static class Prompt
     {
-        public static string ShowDialog(string text, string caption,string buttonText= "Save",string defaultvalue="")
+        class PromptForm : Form
         {
-            Form prompt = new Form()
+            protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+            {
+                switch (keyData)
+                {
+                    case Keys.Escape:
+                        this.Close();
+                        break;
+                }
+                return base.ProcessCmdKey(ref msg, keyData);
+            }
+        }
+        public static (bool,string) ShowDialog(string text, string caption, string buttonText = "Save", string defaultvalue = "")
+        {
+            Form prompt = new PromptForm()
             {
                 Width = 440,
                 Height = 140,
@@ -27,8 +40,7 @@ namespace Visual_PowerShell.Helpers
             prompt.Controls.Add(confirmation);
             prompt.Controls.Add(textLabel);
             prompt.AcceptButton = confirmation;
-
-            return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+            return (prompt.ShowDialog() == DialogResult.OK, textBox.Text);
         }
     }
 }

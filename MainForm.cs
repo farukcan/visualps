@@ -111,6 +111,7 @@ namespace Visual_PowerShell
         public List<Repository> commandRepositories = new List<Repository>();
         private async void Form_Load(object sender, EventArgs e)
         {
+            SyncStyleLabel();
             workplaceInput.Text = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
             if( !string.IsNullOrEmpty(Properties.Settings.Default.Workspace))
             {
@@ -187,8 +188,8 @@ namespace Visual_PowerShell
 
         private void newRepoButton_Click(object sender, EventArgs e)
         {
-            string promptValue = Prompt.ShowDialog("Repository Name", "New Repository","Create");
-            if (string.IsNullOrEmpty(promptValue)) return;
+            (bool haveValue, string promptValue) = Prompt.ShowDialog("Repository Name", "New Repository","Create");
+            if (!haveValue || string.IsNullOrEmpty(promptValue)) return;
             commandRepositories.Insert(0,new Repository()
             {
                 Name = promptValue,
@@ -257,8 +258,8 @@ namespace Visual_PowerShell
 
         private async void addRemote_Click(object sender, EventArgs e)
         {
-            string promptValue = Prompt.ShowDialog("JSON URL (Gist, API, CDN)", "Download Remote JSON","Download");
-            if (string.IsNullOrEmpty(promptValue)) return;
+            (bool haveValue, string promptValue) = Prompt.ShowDialog("JSON URL (Gist, API, CDN)", "Download Remote JSON","Download");
+            if (!haveValue || string.IsNullOrEmpty(promptValue)) return;
 
             await LoadFromURL(promptValue,true);
         }
@@ -340,8 +341,8 @@ namespace Visual_PowerShell
         {
             if (repositoryList.SelectedItem is null) return;
             var repo = commandRepositories[repositoryList.SelectedIndex];
-            string promptText = Prompt.ShowDialog("Enter command name", "New command", "Create");
-            if (string.IsNullOrEmpty(promptText)) return;
+            (bool haveValue, string promptText) = Prompt.ShowDialog("Enter command name", "New command", "Create");
+            if (!haveValue ||string.IsNullOrEmpty(promptText)) return;
 
             repo.Commands.Add(new Command()
             {
@@ -416,8 +417,8 @@ namespace Visual_PowerShell
             if (commandList.SelectedItem is null) return;
             var repo = commandRepositories[repositoryList.SelectedIndex];
             var command = repo.Commands[commandList.SelectedIndex];
-            string promptText = Prompt.ShowDialog("Enter script ; {text:YourTextInput} , {file:YourFileInput} , {save:YourFileInput}", "New script", "Create");
-            if (string.IsNullOrEmpty(promptText)) return;
+            (bool haveValue,string promptText) = Prompt.ShowDialog("Enter script ; {text:YourTextInput} , {file:YourFileInput} , {save:YourFileInput}", "New script", "Create");
+            if (!haveValue || string.IsNullOrEmpty(promptText)) return;
             command.Scripts.Add(promptText);
             UpdateScripts();
             scriptList.SelectedIndex = command.Scripts.Count - 1;
@@ -471,7 +472,11 @@ namespace Visual_PowerShell
                 switch (type)
                 {
                     case "text":
-                        value = Prompt.ShowDialog(key, "Enter text", "Enter");
+                        (bool haveValue, value) = Prompt.ShowDialog(key, "Enter text", "Enter");
+                        if (!haveValue) {
+                            Cancel();
+                            return;
+                        }
                         break;
                     case "file":
                         var fileDialog = new OpenFileDialog();
@@ -500,7 +505,7 @@ namespace Visual_PowerShell
                 }
                 for(int i=runningScriptIndex; i < scripts.Count; i++)
                 {
-                    scripts[i] = scripts[i].Replace(match.Value, value);
+                    scripts[i] = scripts[i].Replace(match.Value, value).TrimEnd();
                 }
             }
             var script = scripts[runningScriptIndex];
@@ -594,11 +599,11 @@ namespace Visual_PowerShell
         }
         void Cancel()
         {
+            terminalArea.Text += $"\r\n  (Cancelled Manually)";
+            LaunchFreeMode();
             if (_ps is not null)
             {
-                terminalArea.Text += $"\r\n  (Cancelled Manually)";
                 _ps.Stop();
-                LaunchFreeMode();
                 _ps = null;
             }
         }
@@ -647,8 +652,8 @@ namespace Visual_PowerShell
             var repo = commandRepositories[repositoryList.SelectedIndex];
             var command = repo.Commands[commandList.SelectedIndex];
             var script = command.Scripts[scriptList.SelectedIndex];
-            string newValue = Prompt.ShowDialog("Enter scripts", "Edit script", "Edit", script);
-            if (string.IsNullOrEmpty(newValue)) return;
+            (bool haveValue, string newValue) = Prompt.ShowDialog("Enter scripts", "Edit script", "Edit", script);
+            if (!haveValue || string.IsNullOrEmpty(newValue)) return;
             command.Scripts[scriptList.SelectedIndex] = newValue;
             UpdateScripts();
         }
@@ -1036,6 +1041,27 @@ namespace Visual_PowerShell
                 saveRepo.PerformClick();
                 e.SuppressKeyPress = true;  // Stops other controls on the form receiving event.
             }
+        }
+
+        private void colorPicker_Click(object sender, EventArgs e)
+        {
+            ColorDialog colorDialogForBackground = new();
+            colorDialogForBackground.Color = terminalArea.BackColor;
+            colorDialogForBackground.ShowDialog();
+            Properties.Settings.Default.TerminalBackgroundColor = colorDialogForBackground.Color;
+            SyncStyleLabel();
+            ColorDialog colorDialogForText = new();
+            colorDialogForText.Color = terminalArea.ForeColor;
+            colorDialogForText.ShowDialog();
+            Properties.Settings.Default.TerminalTextColor = colorDialogForText.Color;
+            SyncStyleLabel();
+        }
+        void SyncStyleLabel()
+        {
+            terminalArea.BackColor = Properties.Settings.Default.TerminalBackgroundColor;
+            terminalArea.ForeColor = Properties.Settings.Default.TerminalTextColor;
+            colorPicker.ForeColor = terminalArea.ForeColor;
+            colorPicker.BackColor = terminalArea.BackColor;
         }
     }
 }
