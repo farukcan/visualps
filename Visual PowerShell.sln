@@ -3,18 +3,30 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33403.182
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Visual PowerShell", "Visual PowerShell.csproj", "{96B380AD-58A8-4A4C-ACC6-5063A45BDCC1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Visual PowerShell", "Visual PowerShell.csproj", "{96B380AD-58A8-4A4C-ACC6-5063A45BDCC1}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Installer", "Installer\Installer.vdproj", "{1BE9DBA7-20E8-43F9-8159-46638DB0A50B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{96B380AD-58A8-4A4C-ACC6-5063A45BDCC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{96B380AD-58A8-4A4C-ACC6-5063A45BDCC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96B380AD-58A8-4A4C-ACC6-5063A45BDCC1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{96B380AD-58A8-4A4C-ACC6-5063A45BDCC1}.Debug|x86.Build.0 = Debug|Any CPU
 		{96B380AD-58A8-4A4C-ACC6-5063A45BDCC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{96B380AD-58A8-4A4C-ACC6-5063A45BDCC1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96B380AD-58A8-4A4C-ACC6-5063A45BDCC1}.Release|x86.ActiveCfg = Release|Any CPU
+		{96B380AD-58A8-4A4C-ACC6-5063A45BDCC1}.Release|x86.Build.0 = Release|Any CPU
+		{1BE9DBA7-20E8-43F9-8159-46638DB0A50B}.Debug|Any CPU.ActiveCfg = Debug
+		{1BE9DBA7-20E8-43F9-8159-46638DB0A50B}.Debug|x86.ActiveCfg = Debug
+		{1BE9DBA7-20E8-43F9-8159-46638DB0A50B}.Release|Any CPU.ActiveCfg = Release
+		{1BE9DBA7-20E8-43F9-8159-46638DB0A50B}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

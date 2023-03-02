@@ -1,6 +1,7 @@
 # Visual PowerShell
 
 Open Source Powershell Executer GUI.
+
 * Prevents you from forgetting to how to use commands.
 * Best for beginners who are learning Powershell.
 * Use Github Gist to save your scripts.
@@ -13,3 +14,4 @@ Open Source Powershell Executer GUI.
 * .NET Core commands : new, install, uninstall, update,etc.
 * Random number, person, book, text, etc. generator.
 * URL Shortener, Currency converter, IP locator, etc.
+* NPM commands to install,uninstall,update,etc.
