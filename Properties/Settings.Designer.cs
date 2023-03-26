@@ -130,5 +130,29 @@ namespace Visual_PowerShell.Properties {
                 this["TerminalTextColor"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string BotToken {
+            get {
+                return ((string)(this["BotToken"]));
+            }
+            set {
+                this["BotToken"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool LaunchBotOnStart {
+            get {
+                return ((bool)(this["LaunchBotOnStart"]));
+            }
+            set {
+                this["LaunchBotOnStart"] = value;
+            }
+        }
     }
 }

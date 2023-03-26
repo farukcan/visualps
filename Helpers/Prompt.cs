@@ -30,7 +30,7 @@ namespace Visual_PowerShell.Helpers
                 Height = 140,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 Text = caption,
-                StartPosition = FormStartPosition.CenterScreen
+                StartPosition = FormStartPosition.CenterScreen,
             };
             Label textLabel = new Label() { Left = 10, Top = 10, Width = 400, Text = text };
             TextBox textBox = new TextBox() { Left = 10, Top = 30, Width = 400, Text= defaultvalue };

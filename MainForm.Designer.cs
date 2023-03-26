@@ -72,6 +72,9 @@
             this.addLocal = new System.Windows.Forms.Button();
             this.repositoryList = new System.Windows.Forms.ListBox();
             this.settingsTab = new System.Windows.Forms.TabPage();
+            this.runBot = new System.Windows.Forms.Button();
+            this.botToken = new System.Windows.Forms.TextBox();
+            this.label25 = new System.Windows.Forms.Label();
             this.defaultAuthor = new System.Windows.Forms.TextBox();
             this.defaultWebsite = new System.Windows.Forms.TextBox();
             this.label12 = new System.Windows.Forms.Label();
@@ -80,6 +83,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.packageList = new System.Windows.Forms.TextBox();
             this.about = new System.Windows.Forms.TabPage();
+            this.label24 = new System.Windows.Forms.Label();
             this.label23 = new System.Windows.Forms.Label();
             this.label22 = new System.Windows.Forms.Label();
             this.label21 = new System.Windows.Forms.Label();
@@ -99,7 +103,7 @@
             this.label7 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
-            this.label24 = new System.Windows.Forms.Label();
+            this.launchBotOnStart = new System.Windows.Forms.CheckBox();
             this.mainTabControl.SuspendLayout();
             this.launcher.SuspendLayout();
             this.launcherTabs.SuspendLayout();
@@ -636,6 +640,10 @@
             // 
             // settingsTab
             // 
+            this.settingsTab.Controls.Add(this.launchBotOnStart);
+            this.settingsTab.Controls.Add(this.runBot);
+            this.settingsTab.Controls.Add(this.botToken);
+            this.settingsTab.Controls.Add(this.label25);
             this.settingsTab.Controls.Add(this.defaultAuthor);
             this.settingsTab.Controls.Add(this.defaultWebsite);
             this.settingsTab.Controls.Add(this.label12);
@@ -651,6 +659,34 @@
             this.settingsTab.Text = "⚙️ Settings";
             this.settingsTab.UseVisualStyleBackColor = true;
             this.settingsTab.Click += new System.EventHandler(this.settingsTab_Click);
+            // 
+            // runBot
+            // 
+            this.runBot.Location = new System.Drawing.Point(3, 319);
+            this.runBot.Name = "runBot";
+            this.runBot.Size = new System.Drawing.Size(578, 26);
+            this.runBot.TabIndex = 13;
+            this.runBot.Text = "Run Bot";
+            this.runBot.UseVisualStyleBackColor = true;
+            this.runBot.Click += new System.EventHandler(this.runBot_Click);
+            // 
+            // botToken
+            // 
+            this.botToken.Location = new System.Drawing.Point(4, 259);
+            this.botToken.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.botToken.Name = "botToken";
+            this.botToken.Size = new System.Drawing.Size(578, 26);
+            this.botToken.TabIndex = 12;
+            // 
+            // label25
+            // 
+            this.label25.AutoSize = true;
+            this.label25.Location = new System.Drawing.Point(4, 238);
+            this.label25.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label25.Name = "label25";
+            this.label25.Size = new System.Drawing.Size(145, 18);
+            this.label25.TabIndex = 11;
+            this.label25.Text = "Telegram Bot Token";
             // 
             // defaultAuthor
             // 
@@ -720,7 +756,7 @@
             this.packageList.Margin = new System.Windows.Forms.Padding(6);
             this.packageList.Multiline = true;
             this.packageList.Name = "packageList";
-            this.packageList.Size = new System.Drawing.Size(578, 445);
+            this.packageList.Size = new System.Drawing.Size(578, 194);
             this.packageList.TabIndex = 0;
             this.packageList.Text = "Loading";
             // 
@@ -751,6 +787,15 @@
             this.about.TabIndex = 3;
             this.about.Text = "ℹ️ About / Help";
             this.about.UseVisualStyleBackColor = true;
+            // 
+            // label24
+            // 
+            this.label24.AutoSize = true;
+            this.label24.Location = new System.Drawing.Point(19, 579);
+            this.label24.Name = "label24";
+            this.label24.Size = new System.Drawing.Size(278, 18);
+            this.label24.TabIndex = 18;
+            this.label24.Text = "Press R to rename selected command.";
             // 
             // label23
             // 
@@ -928,14 +973,16 @@
             this.notifyIcon.Click += new System.EventHandler(this.notifyIcon_MouseClick);
             this.notifyIcon.MouseClick += new System.Windows.Forms.MouseEventHandler(this.notifyIcon_MouseClick);
             // 
-            // label24
+            // launchBotOnStart
             // 
-            this.label24.AutoSize = true;
-            this.label24.Location = new System.Drawing.Point(19, 579);
-            this.label24.Name = "label24";
-            this.label24.Size = new System.Drawing.Size(278, 18);
-            this.label24.TabIndex = 18;
-            this.label24.Text = "Press R to rename selected command.";
+            this.launchBotOnStart.AutoSize = true;
+            this.launchBotOnStart.Location = new System.Drawing.Point(4, 291);
+            this.launchBotOnStart.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.launchBotOnStart.Name = "launchBotOnStart";
+            this.launchBotOnStart.Size = new System.Drawing.Size(166, 22);
+            this.launchBotOnStart.TabIndex = 14;
+            this.launchBotOnStart.Text = "Launch Bot On Start";
+            this.launchBotOnStart.UseVisualStyleBackColor = true;
             // 
             // MainForm
             // 
@@ -1043,6 +1090,10 @@
         private System.Windows.Forms.Label label23;
         private System.Windows.Forms.Label colorPicker;
         private System.Windows.Forms.Label label24;
+        private System.Windows.Forms.Button runBot;
+        private System.Windows.Forms.TextBox botToken;
+        private System.Windows.Forms.Label label25;
+        private System.Windows.Forms.CheckBox launchBotOnStart;
     }
 }
 

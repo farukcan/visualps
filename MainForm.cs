@@ -27,6 +27,8 @@ using System.Diagnostics;
 using System.Speech.Synthesis;
 using Prompt = Visual_PowerShell.Helpers.Prompt;
 using System.Drawing.Printing;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot;
 
 namespace Visual_PowerShell
 {
@@ -65,11 +67,13 @@ namespace Visual_PowerShell
             }
             SetCommandIndex(index);
         }
+        private int commandIndex;
         private void SetCommandIndex(int index)
         {
             if (index >= 0 && index < commandList.Items.Count)
             {
                 commandList.SelectedIndex = index;
+                commandIndex = index;
             }
             else
             {
@@ -121,10 +125,22 @@ namespace Visual_PowerShell
             backToCommands.Checked = Properties.Settings.Default.BackToCommands;
             defaultAuthor.Text = Properties.Settings.Default.DefaultAuthor;
             defaultWebsite.Text = Properties.Settings.Default.DefaultWebsite;
+            botToken.Text = Properties.Settings.Default.BotToken;
+            launchBotOnStart.Checked = Properties.Settings.Default.LaunchBotOnStart;
+            mainTabControl.SelectedTab = repositories;
+            mainTabControl.Enabled = false;
             await LoadRepositoriesFromSettings();
             await RetreivePackages();
+            mainTabControl.Enabled = true;
+            mainTabControl.SelectedTab = launcher;
+
             SetRepositoryIndex(Properties.Settings.Default.RepositoryIndex);
             commandList.Focus();
+            if (launchBotOnStart.Checked)
+            {
+                mainTabControl.SelectedTab = settingsTab;
+                runBot.PerformClick();
+            }
         }
         async Task LoadRepositoriesFromSettings()
         {
@@ -165,6 +181,8 @@ namespace Visual_PowerShell
             Properties.Settings.Default.BackToCommands = backToCommands.Checked;
             Properties.Settings.Default.DefaultAuthor = defaultAuthor.Text;
             Properties.Settings.Default.DefaultWebsite = defaultWebsite.Text;
+            Properties.Settings.Default.BotToken = botToken.Text;
+            Properties.Settings.Default.LaunchBotOnStart = launchBotOnStart.Checked;
             Properties.Settings.Default.Save();
         }
         private void UpdateRepositoryList()
@@ -178,10 +196,12 @@ namespace Visual_PowerShell
             SetRepositoryIndex(index);
             if (repositoryList.SelectedItem is null) SetRepositoryIndex(0);
         }
+        private int repositoryIndex;
         private void SetRepositoryIndex(int index)
         {
             if (index >= 0 && index < repositoryList.Items.Count)
             {
+                repositoryIndex = index;
                 repositoryList.SelectedIndex = index;
             }
         }
@@ -423,15 +443,15 @@ namespace Visual_PowerShell
             UpdateScripts();
             scriptList.SelectedIndex = command.Scripts.Count - 1;
         }
-
-        private void launchButton_Click(object sender, EventArgs e)
+        bool launchedFromBot = false;
+        private async void launchButton_Click(object sender, EventArgs e)
         {
-            Launch();
+            await LaunchAsync();
         }
         PowerShell _ps;
         List<string> scripts = new List<string>();
         int runningScriptIndex = 0;
-        private void Launch()
+        private async Task LaunchAsync()
         {
             if (repositoryList.SelectedItem is null) return;
             if (commandList.SelectedItem is null) return;
@@ -445,21 +465,21 @@ namespace Visual_PowerShell
             LaunchingMode();
             scripts.Clear();
             runningScriptIndex = 0;
-            terminalArea.Text += $"\r\n     -----------";
-            terminalArea.Text += $"\r\n     Directory: {workplaceInput.Text}";
+            TerminalLog($"\r\n     -----------");
+            TerminalLog($"\r\n     Directory: {workplaceInput.Text}");
             int i = 0;
             foreach (var script in command.Scripts)
             {
                 i++;
-                terminalArea.Text += $"\r\n     {i})   "  + script;
+                TerminalLog($"\r\n     {i})   " + script);
                 scripts.Add(script);
             }
-            terminalArea.Text += $"\r\n     ----------- \r\n";
+            TerminalLog($"\r\n     ----------- \r\n");
             ScrollTerminalArea();
-            RunScripts();
+            await RunScripts();
         }
 
-        private void RunScripts()
+        private async Task RunScripts()
         {
             PowerShell ps = PowerShell.Create();
             var regex = new Regex(@"\{.*?:.*?\}");
@@ -472,32 +492,88 @@ namespace Visual_PowerShell
                 switch (type)
                 {
                     case "text":
-                        (bool haveValue, value) = Prompt.ShowDialog(key, "Enter text", "Enter");
-                        if (!haveValue) {
-                            Cancel();
-                            return;
+                        if(launchedFromBot && Bot.Instance.chatId is not null)
+                        {
+                            await Bot.Instance.Prompt("Enter Text", key);
+                            SetBotState(Bot.Instance.state);
+                            // wait while state is not lauching
+                            while (Bot.Instance.state == Bot.State.Input)
+                            {
+                                await Task.Delay(250);
+                            }
+                            value = Bot.Instance.lastValue;
+                        }
+                        else
+                        {
+                            (bool haveValue, value) = Prompt.ShowDialog(key, "Enter text", "Enter");
+                            if (!haveValue)
+                            {
+                                await Cancel();
+                                return;
+                            }
                         }
                         break;
                     case "file":
-                        var fileDialog = new OpenFileDialog();
-                        fileDialog.Title = $"Open {key}";
-                        fileDialog.DefaultExt= "file" ;
-                        fileDialog.ShowDialog();
-                        value = fileDialog.FileName;
+                        if(launchedFromBot && Bot.Instance.chatId is not null){
+                            await Bot.Instance.FolderDialog(workplaceInput.Text, true, false,key);
+                            SetBotState(Bot.Instance.state);
+                            // wait while state is not lauching
+                            while (Bot.Instance.state == Bot.State.FolderInput)
+                            {
+                                await Task.Delay(250);
+                            }
+                            value = Bot.Instance.currentPath;
+                        }else{
+                            var fileDialog = new OpenFileDialog();
+                            fileDialog.Title = $"Open {key}";
+                            fileDialog.DefaultExt= "file" ;
+                            fileDialog.ShowDialog();
+                            value = fileDialog.FileName;
+                        }
                         break;
                     case "save":
-                        var saveDialog = new SaveFileDialog();
-                        saveDialog.Title = $"Save {key}";
-                        saveDialog.DefaultExt = "file";
-                        saveDialog.Filter = "All files (*.*)|*.*";
-                        saveDialog.ShowDialog();
-                        value = saveDialog.FileName;
+                        if(launchedFromBot && Bot.Instance.chatId is not null){
+                            await Bot.Instance.FolderDialog(workplaceInput.Text, false, true,"(1/2) Folder for "+key);
+                            SetBotState(Bot.Instance.state);
+                            // wait while state is not lauching
+                            while (Bot.Instance.state == Bot.State.FolderInput)
+                            {
+                                await Task.Delay(250);
+                            }
+                            var folder = Bot.Instance.currentPath;
+                            await Bot.Instance.Prompt("Enter Filename (ex: test.txt)", "(2/2) Filename for "+key);
+                            SetBotState(Bot.Instance.state);
+                            // wait while state is not lauching
+                            while (Bot.Instance.state == Bot.State.Input)
+                            {
+                                await Task.Delay(250);
+                            }
+                            value = Path.Combine(folder,Bot.Instance.lastValue);
+                        }else{
+                            var saveDialog = new SaveFileDialog();
+                            saveDialog.Title = $"Save {key}";
+                            saveDialog.DefaultExt = "file";
+                            saveDialog.Filter = "All files (*.*)|*.*";
+                            saveDialog.ShowDialog();
+                            value = saveDialog.FileName;
+                        }
                         break;
                     case "folder":
-                        var folderDialog = new FolderBrowserDialog();
-                        folderDialog.Description = $"Select Folder '{key}'";
-                        folderDialog.ShowDialog();
-                        value = folderDialog.SelectedPath;
+                        if(launchedFromBot && Bot.Instance.chatId is not null){
+                            await Bot.Instance.FolderDialog(workplaceInput.Text, false, true,key);
+                            SetBotState(Bot.Instance.state);
+                            // wait while state is not lauching
+                            while (Bot.Instance.state == Bot.State.FolderInput)
+                            {
+                                await Task.Delay(250);
+                            }
+                            value = Bot.Instance.currentPath;
+                        }else{
+                            var folderDialog = new FolderBrowserDialog();
+                            folderDialog.Description = $"Select Folder '{key}'";
+                            folderDialog.ShowDialog();
+                            value = folderDialog.SelectedPath;
+                        }
                         break;
                     default:
                         MessageBox.Show("Unknown Prompt Type : " + type);
@@ -522,7 +598,7 @@ namespace Visual_PowerShell
             var asyncToken = ps.BeginInvoke<object, string>(null, output);
 
             BackgroundWorker worker = new BackgroundWorker();
-            worker.DoWork += (obj, args) =>
+            worker.DoWork += async (obj, args) =>
             {
                 while (!(asyncToken.IsCompleted || ps.HadErrors))
                 {
@@ -530,42 +606,59 @@ namespace Visual_PowerShell
                 }
                 foreach (var warningRecord in ps.Streams.Warning)
                 {
-                    terminalArea.Text += "\r\n" + warningRecord.ToString();
+                    TerminalLog("\r\n" + warningRecord.ToString());
                 }
                 if (ps.HadErrors)
                 {
                     foreach (var errorRecord in ps.Streams.Error)
                     {
-                        terminalArea.Text += "\r\n" + errorRecord.ToString();
+                        TerminalLog("\r\n" + errorRecord.ToString());
                     }
-                    terminalArea.Text += $"\r\n     ---\r\n  ({runningScriptIndex}/{scripts.Count} Failed: {script})";
+                    TerminalLog($"\r\n     ---\r\n  ({runningScriptIndex}/{scripts.Count} Failed: {script})");
                 }
                 else
                 {
-                    terminalArea.Text += $"\r\n     ---\r\n ({runningScriptIndex}/{scripts.Count} Success: {script})";
+                    TerminalLog($"\r\n     ---\r\n ({runningScriptIndex}/{scripts.Count} Success: {script})");
                 }
                 ScrollTerminalArea();
                 if (runningScriptIndex< scripts.Count && !ps.HadErrors)
                 {
-                    RunScripts();
+                    await RunScripts();
                 }
                 else
                 {
                     LaunchFreeMode();
                     if (backToCommands.Checked && !ps.HadErrors)
                     {
-                        Thread.Sleep(1000);
-                        launcherTabs.SelectedTab = commandsTab;
+                        launcherTabs.InvokeIfRequired(() =>
+                        {
+                            launcherTabs.SelectedTab = commandsTab;
+                        });
                     }
                 }
             };
             worker.RunWorkerAsync();
         }
 
+        public void TerminalLog(string text)
+        {
+            terminalArea.InvokeIfRequired(async() =>
+            {
+                terminalArea.Text += text;
+                if (launchedFromBot && Bot.Instance.chatId is not null && text.Trim().Length != 0)
+                {
+                    await Bot.Instance.SendText(text.Trim());
+                }
+            });
+        }
+
         void ScrollTerminalArea()
         {
-            terminalArea.SelectionStart = terminalArea.TextLength;
-            terminalArea.ScrollToCaret();
+            terminalArea.InvokeIfRequired(() =>
+            {
+                terminalArea.SelectionStart = terminalArea.TextLength;
+                terminalArea.ScrollToCaret();
+            });
         }
 
         void ProcessOutput(object? sender, DataAddedEventArgs eventArgs)
@@ -574,8 +667,11 @@ namespace Visual_PowerShell
             if (null != collection)
             {
                 var outputItem = collection[eventArgs.Index];
-                terminalArea.Text += "\r\n" + outputItem.ToString();
-                ScrollTerminalArea();
+                terminalArea.InvokeIfRequired(async () =>
+                {
+                    TerminalLog("\r\n" + outputItem.ToString());
+                    ScrollTerminalArea();
+                });
             }
         }
 
@@ -597,13 +693,13 @@ namespace Visual_PowerShell
             }
         }
 
-        private void cancelButtons_Click(object sender, EventArgs e)
+        private async void cancelButtons_Click(object sender, EventArgs e)
         {
-            Cancel();
+            await Cancel();
         }
-        void Cancel()
+        async Task Cancel()
         {
-            terminalArea.Text += $"\r\n  (Cancelled Manually)";
+            TerminalLog($"\r\n  (Cancelled Manually)");
             LaunchFreeMode();
             if (_ps is not null)
             {
@@ -618,24 +714,30 @@ namespace Visual_PowerShell
             ((Control)commandsTab).Enabled = false;
             ((Control)scriptsTab).Enabled = false;
         }
+
         void LaunchFreeMode()
         {
-            cancelButtons.Enabled = false;
-            ((Control)scriptsTab).Enabled = true;
-            ((Control)commandsTab).Enabled = true;
+            SetBotState(Bot.State.Command);
+            cancelButtons.InvokeIfRequired(() =>
+            {
+                cancelButtons.Enabled = false;
+                ((Control)scriptsTab).Enabled = true;
+                ((Control)commandsTab).Enabled = true;
+            });
+            launchedFromBot = false;
         }
 
-        private void launchOnClick(object sender, EventArgs e)
+        private async void launchOnClick(object sender, EventArgs e)
         {
             if (launchOnClickCheck.Checked)
             {
-                Launch();
+                await LaunchAsync();
             }
         }
 
-        private void launchOnDoubleClick(object sender, EventArgs e)
+        private async void launchOnDoubleClick(object sender, EventArgs e)
         {
-            Launch();
+            await LaunchAsync();
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -813,7 +915,7 @@ namespace Visual_PowerShell
             SaveSettings();
         }
 
-        private void commandList_KeyDown(object sender, KeyEventArgs e)
+        private async void commandList_KeyDown(object sender, KeyEventArgs e)
         {
             switch (e.KeyCode)
             {
@@ -873,7 +975,7 @@ namespace Visual_PowerShell
                     break;
                 case Keys.Enter:
                 case Keys.Space:
-                    Launch();
+                    await LaunchAsync();
                     break;
                 case Keys.W:
                     SetCommandIndex(commandList.SelectedIndex - 1);
@@ -916,7 +1018,7 @@ namespace Visual_PowerShell
             }
         }
 
-        private void terminalArea_KeyDown(object sender, KeyEventArgs e)
+        private async void terminalArea_KeyDown(object sender, KeyEventArgs e)
         {
             switch (e.KeyCode){
                 case Keys.Subtract:
@@ -925,7 +1027,7 @@ namespace Visual_PowerShell
                     terminalArea.Text = string.Empty;
                     break;
                 case Keys.Escape:
-                    Cancel();
+                    await Cancel();
                     commandList.Focus();
                     break;
                 case Keys.Enter:
@@ -1077,6 +1179,203 @@ namespace Visual_PowerShell
             terminalArea.ForeColor = Properties.Settings.Default.TerminalTextColor;
             colorPicker.ForeColor = terminalArea.ForeColor;
             colorPicker.BackColor = terminalArea.BackColor;
+        }
+        bool botWorkspaceSelectMode = false;
+        private async void runBot_Click(object sender, EventArgs e)
+        {
+            if(Bot.Instance.client is null)
+            {
+                Bot.Instance.SetToken(botToken.Text);
+                Bot.Instance.handler = async (update) =>
+                {
+                    if(update.Type == UpdateType.Message || update.Type == UpdateType.CallbackQuery)
+                    {
+                        if(update.Type == UpdateType.CallbackQuery){
+                            Bot.Instance.chatId = update.CallbackQuery.Message.Chat.Id;
+                        }else{
+                            Bot.Instance.chatId = update.Message.Chat.Id;
+                        }
+                        runBot.InvokeIfRequired(() =>
+                        {
+                            runBot.Text = "Stop Listening";
+                        });
+                       
+                        Bot.Instance.handler = async (update) =>
+                        {
+                            string text;
+                            if (update.Type == UpdateType.Message)
+                            {
+                                text = update.Message.Text;
+                                if(text == "🛠️ Commands"){
+                                    await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
+                                    SetBotState(Bot.State.Command);
+                                    return;
+                                }else if(text == "📚 Repositories"){
+                                    await Bot.Instance.SendRepositoriesAsync(commandRepositories);
+                                    SetBotState(Bot.State.Repository);
+                                    return;
+                                }else if(text == "📁 Set Workspace"){
+                                    await Bot.Instance.FolderDialog(workplaceInput.Text);
+                                    SetBotState(Bot.State.FolderInput);
+                                    botWorkspaceSelectMode = true;
+                                    return;
+                                }
+                            }else if(update.Type == UpdateType.CallbackQuery){
+                                text = update.CallbackQuery.Data;
+                                await Bot.Instance.client.DeleteMessageAsync(update.CallbackQuery.Message.Chat.Id, update.CallbackQuery.Message.MessageId);
+                            }else{
+                                MessageBox.Show(update.Type.ToString());
+                                return;
+                            }
+                            switch (Bot.Instance.state)
+                            {
+                                case Bot.State.Command:
+                                    if ( text == "[Switch Repository]")
+                                    {
+                                        await Bot.Instance.SendRepositoriesAsync(commandRepositories);
+                                        SetBotState(Bot.Instance.state);
+                                        break;
+                                    }
+                                    // search for command
+                                    var repo = commandRepositories[repositoryIndex];
+                                    for (int i=0; i < repo.Commands.Count; i++)
+                                    {
+                                        if (repo.Commands[i].Name == text)
+                                        {
+                                            mainTabControl.InvokeIfRequired(() =>
+                                            {
+                                                TrayIconClick();
+                                                SetCommandIndex(i);
+                                                SetBotState(Bot.State.Launching);
+                                                launchedFromBot = true;
+                                                mainTabControl.SelectedTab = launcher;
+                                                launcherTabs.SelectedTab = commandsTab;
+                                                launchButton.PerformClick();
+                                            });
+                                            return;
+                                        }
+                                    }
+                                    //await Bot.Instance.SendText("Command Not Found");
+                                    //await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
+                                    SetBotState(Bot.Instance.state);
+                                    break;
+                                case Bot.State.Repository:
+                                    if (text == "[Back]")
+                                    {
+                                        await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
+                                        SetBotState(Bot.Instance.state);
+                                        break;
+                                    }
+                                    // search for repository
+                                    for(int i=0; i< commandRepositories.Count; i++)
+                                    {
+                                        if (commandRepositories[i].Name == text)
+                                        {
+                                            mainTabControl.InvokeIfRequired(() => {
+                                                SetRepositoryIndex(i);
+                                            });
+                                            await Bot.Instance.SendRepositoryAsync(commandRepositories[i]);
+                                            return;
+                                        }
+                                    }
+                                    //await Bot.Instance.SendText("Repository Not Found");
+                                    //await Bot.Instance.SendRepositoriesAsync(commandRepositories);
+                                    SetBotState(Bot.Instance.state);
+                                    break;
+                                case Bot.State.Launching:
+                                    if (text == "[Done]"){
+                                        await Cancel();
+                                    }
+                                    break;
+                                case Bot.State.Input:
+                                    if (update.Type == UpdateType.Message){
+                                        Bot.Instance.lastValue = text;
+                                        SetBotState(Bot.State.Launching);
+                                    }
+                                    break;
+                                case Bot.State.FolderInput:
+                                    if(botWorkspaceSelectMode){
+                                        if(text == "🔼 Parent Folder"){
+                                            await Bot.Instance.FolderDialog(Path.GetDirectoryName(Bot.Instance.currentPath));
+                                        }else if(text == "✅ Select Folder"){
+                                            workplaceInput.InvokeIfRequired(() =>{
+                                                workplaceInput.Text = Bot.Instance.currentPath;
+                                            });
+                                            await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
+                                            SetBotState(Bot.State.Command);
+                                            botWorkspaceSelectMode = false;
+                                        }else{
+                                            await Bot.Instance.FolderDialog(Path.Combine(Bot.Instance.currentPath, text.Replace("📁","")));
+                                        }
+                                    }else{
+                                        if(text == "🔼 Parent Folder"){
+                                            await Bot.Instance.FolderDialog(
+                                                Path.GetDirectoryName(Bot.Instance.currentPath),
+                                                Bot.Instance.dialogFileSelectParam,
+                                                Bot.Instance.dialogFolderSelectParam
+                                            );
+                                        }else if(text == "✅ Select Folder"){
+                                            SetBotState(Bot.State.Launching);
+                                        }else{
+                                            if(text.Contains("📁")){
+                                                await Bot.Instance.FolderDialog(
+                                                    Path.Combine(Bot.Instance.currentPath, text.Replace("📁","")),
+                                                    Bot.Instance.dialogFileSelectParam,
+                                                    Bot.Instance.dialogFolderSelectParam
+                                                );
+                                            }else{
+                                                SetBotState(Bot.State.Launching);
+                                                Bot.Instance.currentPath = Path.Combine(Bot.Instance.currentPath, text.Replace("📄",""));
+                                            }
+                                        }
+                                    }
+                                    break;
+                            }
+                        }; // handler end
+                         await Bot.Instance.StartConversation();
+                    }
+                };
+            }
+            if(Bot.Instance.chatId is null && Bot.Instance.user is null)
+            {
+                await Bot.Instance.GetMe();
+                SetBotState(Bot.State.Waiting);
+            }
+            else
+            {
+                var client = Bot.Instance.client;
+                Bot.Instance.client = null;
+                Bot.Instance.chatId = null;
+                SetBotState(Bot.State.Idle);
+            }
+        }
+        void SetBotState(Bot.State state)
+        {
+            Bot.Instance.state = state;
+            runBot.InvokeIfRequired(() =>
+            {
+                switch (state)
+                {
+                    case Bot.State.Idle:
+                        runBot.Text = "Run Bot";
+                        break;
+                    case Bot.State.Waiting:
+                        runBot.Text = "Waiting for first message to : " + Bot.Instance.user.Username;
+                        break;
+                    case Bot.State.Launching:
+                        runBot.Text = "Active - Launching Command";
+                        break;
+                    case Bot.State.Command:
+                        runBot.Text = "Active - Command Selector";
+                        break;
+                    case Bot.State.Repository:
+                        runBot.Text = "Active - Repository Selector";
+                        break;
+                    case Bot.State.Input:
+                        runBot.Text = "Active - Waiting for input";
+                        break;
+                }
+            });
         }
     }
 }
