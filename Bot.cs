@@ -206,11 +206,13 @@ namespace Visual_PowerShell
                                 }
                                 catch (System.Exception e)
                                 {
-                                    lock (lastText)
-                                    {
-                                        lastText += $"\n\r{e.Message}";
+                                    if(!e.Message.Contains("message is not modified")){
+                                        lock (lastText)
+                                        {
+                                            lastText += $"\n\r{e.Message}";
+                                        }
+                                        failed = true;
                                     }
-                                    failed = true;
                                 }
 
                                 if (lastText.Length < MaxLength && !failed)
