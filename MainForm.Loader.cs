@@ -1,10 +1,10 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Newtonsoft.Json;
 using Visual_PowerShell.Models;
 
 namespace Visual_PowerShell
@@ -33,16 +33,16 @@ namespace Visual_PowerShell
                 MessageBox.Show(exception.Message);
             }
         }
-        
-       void LoadFile(string fileName)
+
+        void LoadFile(string fileName)
         {
             using (StreamReader reader = new StreamReader(fileName))
             {
                 string json = reader.ReadToEnd();
                 Repository repository = JsonConvert.DeserializeObject<Repository>(json);
                 repository.Address = fileName;
-                int updateRepositoryIndex = commandRepositories.FindLastIndex((r)=>r.Address==repository.Address);
-                if(updateRepositoryIndex!= -1)
+                int updateRepositoryIndex = commandRepositories.FindLastIndex((r) => r.Address == repository.Address);
+                if (updateRepositoryIndex != -1)
                 {
                     commandRepositories[updateRepositoryIndex] = repository;
                 }
@@ -51,10 +51,10 @@ namespace Visual_PowerShell
                     commandRepositories.Add(repository);
                 }
                 UpdateRepositoryList();
-                SetRepositoryIndex(commandRepositories.Count-1);
+                SetRepositoryIndex(commandRepositories.Count - 1);
             }
         }
-        private async Task LoadFromURL(string url,bool setRepoIndex=false)
+        private async Task LoadFromURL(string url, bool setRepoIndex = false)
         {
             try
             {
@@ -74,7 +74,7 @@ namespace Visual_PowerShell
                         commandRepositories.Add(repository);
                     }
                     UpdateRepositoryList();
-                    if(setRepoIndex) SetRepositoryIndex(commandRepositories.Count-1);
+                    if (setRepoIndex) SetRepositoryIndex(commandRepositories.Count - 1);
                 }
             }
             catch (Exception exception)
@@ -91,7 +91,7 @@ namespace Visual_PowerShell
                 url = url.Replace("https://gist.github.com/", "https://gist.githubusercontent.com/");
                 if (!url.Contains("/raw"))
                 {
-                    url = url + (url.EndsWith("/") ? "raw?update=" : "/raw?update=") +DateTime.Now.ToFileTime();
+                    url = url + (url.EndsWith("/") ? "raw?update=" : "/raw?update=") + DateTime.Now.ToFileTime();
                 }
             }
             return url;
@@ -105,7 +105,7 @@ namespace Visual_PowerShell
                 StringSplitOptions.None
             );
             // foreach package
-            foreach ( var package in packages )
+            foreach (var package in packages)
             {
                 try
                 {
@@ -120,7 +120,7 @@ namespace Visual_PowerShell
                         }
                     }
                 }
-                catch(Exception exception)
+                catch (Exception exception)
                 {
                     MessageBox.Show(exception.Message);
                 }

@@ -1,5 +1,5 @@
-using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
@@ -11,56 +11,68 @@ namespace Visual_PowerShell
     {
         bool launchedFromBot = false;
         bool botWorkspaceSelectMode = false;
-        private async void runBot_Click(object sender, EventArgs e)
+        private async Task BotRunner()
         {
-            if(Bot.Instance.client is null)
+            if (Bot.Instance.client is null)
             {
                 Bot.Instance.SetToken(botToken.Text);
                 Bot.Instance.handler = async (update) =>
                 {
-                    if(update.Type == UpdateType.Message || update.Type == UpdateType.CallbackQuery)
+                    if (update.Type == UpdateType.Message || update.Type == UpdateType.CallbackQuery)
                     {
-                        if(update.Type == UpdateType.CallbackQuery){
+                        if (update.Type == UpdateType.CallbackQuery)
+                        {
                             Bot.Instance.chatId = update.CallbackQuery.Message.Chat.Id;
-                        }else{
+                        }
+                        else
+                        {
                             Bot.Instance.chatId = update.Message.Chat.Id;
                         }
                         runBot.InvokeIfRequired(() =>
                         {
                             runBot.Text = "Stop Listening";
                         });
-                       
+
                         Bot.Instance.handler = async (update) =>
                         {
                             string text;
                             if (update.Type == UpdateType.Message)
                             {
                                 text = update.Message.Text;
-                                if(text == "🛠️ Commands"){
+                                if (text == "🛠️ Commands")
+                                {
                                     await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
                                     SetBotState(Bot.State.Command);
                                     return;
-                                }else if(text == "📚 Repositories"){
+                                }
+                                else if (text == "📚 Repositories")
+                                {
                                     await Bot.Instance.SendRepositoriesAsync(commandRepositories);
                                     SetBotState(Bot.State.Repository);
                                     return;
-                                }else if(text == "📁 Set Workspace"){
+                                }
+                                else if (text == "📁 Set Workspace")
+                                {
                                     await Bot.Instance.FolderDialog(workplaceInput.Text);
                                     SetBotState(Bot.State.FolderInput);
                                     botWorkspaceSelectMode = true;
                                     return;
                                 }
-                            }else if(update.Type == UpdateType.CallbackQuery){
+                            }
+                            else if (update.Type == UpdateType.CallbackQuery)
+                            {
                                 text = update.CallbackQuery.Data;
                                 await Bot.Instance.client.DeleteMessageAsync(update.CallbackQuery.Message.Chat.Id, update.CallbackQuery.Message.MessageId);
-                            }else{
+                            }
+                            else
+                            {
                                 MessageBox.Show(update.Type.ToString());
                                 return;
                             }
                             switch (Bot.Instance.state)
                             {
                                 case Bot.State.Command:
-                                    if ( text == "[Switch Repository]")
+                                    if (text == "[Switch Repository]")
                                     {
                                         await Bot.Instance.SendRepositoriesAsync(commandRepositories);
                                         SetBotState(Bot.Instance.state);
@@ -68,7 +80,7 @@ namespace Visual_PowerShell
                                     }
                                     // search for command
                                     var repo = commandRepositories[repositoryIndex];
-                                    for (int i=0; i < repo.Commands.Count; i++)
+                                    for (int i = 0; i < repo.Commands.Count; i++)
                                     {
                                         if (repo.Commands[i].Name == text)
                                         {
@@ -97,11 +109,12 @@ namespace Visual_PowerShell
                                         break;
                                     }
                                     // search for repository
-                                    for(int i=0; i< commandRepositories.Count; i++)
+                                    for (int i = 0; i < commandRepositories.Count; i++)
                                     {
                                         if (commandRepositories[i].Name == text)
                                         {
-                                            mainTabControl.InvokeIfRequired(() => {
+                                            mainTabControl.InvokeIfRequired(() =>
+                                            {
                                                 SetRepositoryIndex(i);
                                             });
                                             await Bot.Instance.SendRepositoryAsync(commandRepositories[i]);
@@ -113,60 +126,79 @@ namespace Visual_PowerShell
                                     SetBotState(Bot.Instance.state);
                                     break;
                                 case Bot.State.Launching:
-                                    if (text == "[Done]"){
+                                    if (text == "[Done]")
+                                    {
                                         await Cancel();
                                     }
                                     break;
                                 case Bot.State.Input:
-                                    if (update.Type == UpdateType.Message){
+                                    if (update.Type == UpdateType.Message)
+                                    {
                                         Bot.Instance.lastValue = text;
                                         SetBotState(Bot.State.Launching);
                                     }
                                     break;
                                 case Bot.State.FolderInput:
-                                    if(botWorkspaceSelectMode){
-                                        if(text == "🔼 Parent Folder"){
+                                    if (botWorkspaceSelectMode)
+                                    {
+                                        if (text == "🔼 Parent Folder")
+                                        {
                                             await Bot.Instance.FolderDialog(Path.GetDirectoryName(Bot.Instance.currentPath));
-                                        }else if(text == "✅ Select Folder"){
-                                            workplaceInput.InvokeIfRequired(() =>{
+                                        }
+                                        else if (text == "✅ Select Folder")
+                                        {
+                                            workplaceInput.InvokeIfRequired(() =>
+                                            {
                                                 workplaceInput.Text = Bot.Instance.currentPath;
                                             });
                                             await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
                                             SetBotState(Bot.State.Command);
                                             botWorkspaceSelectMode = false;
-                                        }else{
-                                            await Bot.Instance.FolderDialog(Path.Combine(Bot.Instance.currentPath, text.Replace("📁","")));
                                         }
-                                    }else{
-                                        if(text == "🔼 Parent Folder"){
+                                        else
+                                        {
+                                            await Bot.Instance.FolderDialog(Path.Combine(Bot.Instance.currentPath, text.Replace("📁", "")));
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (text == "🔼 Parent Folder")
+                                        {
                                             await Bot.Instance.FolderDialog(
                                                 Path.GetDirectoryName(Bot.Instance.currentPath),
                                                 Bot.Instance.dialogFileSelectParam,
                                                 Bot.Instance.dialogFolderSelectParam
                                             );
-                                        }else if(text == "✅ Select Folder"){
+                                        }
+                                        else if (text == "✅ Select Folder")
+                                        {
                                             SetBotState(Bot.State.Launching);
-                                        }else{
-                                            if(text.Contains("📁")){
+                                        }
+                                        else
+                                        {
+                                            if (text.Contains("📁"))
+                                            {
                                                 await Bot.Instance.FolderDialog(
-                                                    Path.Combine(Bot.Instance.currentPath, text.Replace("📁","")),
+                                                    Path.Combine(Bot.Instance.currentPath, text.Replace("📁", "")),
                                                     Bot.Instance.dialogFileSelectParam,
                                                     Bot.Instance.dialogFolderSelectParam
                                                 );
-                                            }else{
+                                            }
+                                            else
+                                            {
                                                 SetBotState(Bot.State.Launching);
-                                                Bot.Instance.currentPath = Path.Combine(Bot.Instance.currentPath, text.Replace("📄",""));
+                                                Bot.Instance.currentPath = Path.Combine(Bot.Instance.currentPath, text.Replace("📄", ""));
                                             }
                                         }
                                     }
                                     break;
                             }
                         }; // handler end
-                         await Bot.Instance.StartConversation();
+                        await Bot.Instance.StartConversation();
                     }
                 };
             }
-            if(Bot.Instance.chatId is null && Bot.Instance.user is null)
+            if (Bot.Instance.chatId is null && Bot.Instance.user is null)
             {
                 await Bot.Instance.GetMe();
                 SetBotState(Bot.State.Waiting);

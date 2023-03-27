@@ -1,15 +1,12 @@
-﻿using System.Threading;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Visual_PowerShell.Models;
 using Command = Visual_PowerShell.Models.Command;
 using Prompt = Visual_PowerShell.Helpers.Prompt;
-using System.Diagnostics;
 
 namespace Visual_PowerShell
 {
@@ -98,7 +95,7 @@ namespace Visual_PowerShell
         {
             SyncStyleLabel();
             workplaceInput.Text = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-            if( !string.IsNullOrEmpty(Properties.Settings.Default.Workspace))
+            if (!string.IsNullOrEmpty(Properties.Settings.Default.Workspace))
             {
                 workplaceInput.Text = Properties.Settings.Default.Workspace;
             }
@@ -129,7 +126,7 @@ namespace Visual_PowerShell
                 new string[] { "\r\n", "\r", "\n" },
                 StringSplitOptions.None
             );
-            foreach ( var address in addresses )
+            foreach (var address in addresses)
             {
                 if (address.StartsWith("http"))
                 {
@@ -167,9 +164,9 @@ namespace Visual_PowerShell
 
         private void newRepoButton_Click(object sender, EventArgs e)
         {
-            (bool haveValue, string promptValue) = Prompt.ShowDialog("Repository Name", "New Repository","Create");
+            (bool haveValue, string promptValue) = Prompt.ShowDialog("Repository Name", "New Repository", "Create");
             if (!haveValue || string.IsNullOrEmpty(promptValue)) return;
-            commandRepositories.Insert(0,new Repository()
+            commandRepositories.Insert(0, new Repository()
             {
                 Name = promptValue,
                 Author = defaultAuthor.Text,
@@ -177,7 +174,7 @@ namespace Visual_PowerShell
                 Address = "Do not forget to save!"
             });
             UpdateRepositoryList();
-            SetRepositoryIndex(0); 
+            SetRepositoryIndex(0);
         }
 
         private void deleteRepo_Click(object sender, EventArgs e)
@@ -192,13 +189,13 @@ namespace Visual_PowerShell
         {
             OpenFile();
         }
- 
+
         private async void addRemote_Click(object sender, EventArgs e)
         {
-            (bool haveValue, string promptValue) = Prompt.ShowDialog("JSON URL (Gist, API, CDN)", "Download Remote JSON","Download");
+            (bool haveValue, string promptValue) = Prompt.ShowDialog("JSON URL (Gist, API, CDN)", "Download Remote JSON", "Download");
             if (!haveValue || string.IsNullOrEmpty(promptValue)) return;
 
-            await LoadFromURL(promptValue,true);
+            await LoadFromURL(promptValue, true);
         }
 
         private void newCommand_Click(object sender, EventArgs e)
@@ -206,11 +203,11 @@ namespace Visual_PowerShell
             if (repositoryList.SelectedItem is null) return;
             var repo = commandRepositories[repositoryList.SelectedIndex];
             (bool haveValue, string promptText) = Prompt.ShowDialog("Enter command name", "New command", "Create");
-            if (!haveValue ||string.IsNullOrEmpty(promptText)) return;
+            if (!haveValue || string.IsNullOrEmpty(promptText)) return;
 
             repo.Commands.Add(new Command()
             {
-                Name= promptText,
+                Name = promptText,
                 Scripts = new List<string> { }
             });
             UpdateCommandList();
@@ -255,7 +252,7 @@ namespace Visual_PowerShell
             if (commandList.SelectedItem is null) return;
             var repo = commandRepositories[repositoryList.SelectedIndex];
             var command = repo.Commands[commandList.SelectedIndex];
-            (bool haveValue,string promptText) = Prompt.ShowDialog("Enter script ; {text:YourTextInput} , {file:YourFileInput} , {save:YourFileInput}", "New script", "Create");
+            (bool haveValue, string promptText) = Prompt.ShowDialog("Enter script ; {text:YourTextInput} , {file:YourFileInput} , {save:YourFileInput}", "New script", "Create");
             if (!haveValue || string.IsNullOrEmpty(promptText)) return;
             command.Scripts.Add(promptText);
             UpdateScripts();
@@ -362,7 +359,7 @@ namespace Visual_PowerShell
             var repo = commandRepositories[repositoryList.SelectedIndex];
             var command = repo.Commands[commandList.SelectedIndex];
             int index = scriptList.SelectedIndex;
-            if(index<1) return;
+            if (index < 1) return;
             var swap = command.Scripts[index];
             command.Scripts[index] = command.Scripts[index - 1];
             command.Scripts[index - 1] = swap;
@@ -434,7 +431,7 @@ namespace Visual_PowerShell
             if (repositoryList.SelectedItem is null) return;
             var repo = commandRepositories[repositoryList.SelectedIndex];
             // if starts with http
-            if(repo.Address.StartsWith("http"))
+            if (repo.Address.StartsWith("http"))
             {
                 OpenURL(repo.Address);
             }
@@ -551,9 +548,12 @@ namespace Visual_PowerShell
                     break;
                 case Keys.E:
                 case Keys.D:
-                    if(((Control)scriptsTab).Enabled){
+                    if (((Control)scriptsTab).Enabled)
+                    {
                         launcherTabs.SelectedTab = scriptsTab;
-                    }else{
+                    }
+                    else
+                    {
                         launcherTabs.SelectedTab = terminal;
                     }
                     break;
@@ -582,7 +582,8 @@ namespace Visual_PowerShell
 
         private async void terminalArea_KeyDown(object sender, KeyEventArgs e)
         {
-            switch (e.KeyCode){
+            switch (e.KeyCode)
+            {
                 case Keys.Subtract:
                 case Keys.Back:
                 case Keys.Delete:
@@ -601,9 +602,12 @@ namespace Visual_PowerShell
                     break;
                 case Keys.Q:
                 case Keys.A:
-                    if(((Control)scriptsTab).Enabled){
+                    if (((Control)scriptsTab).Enabled)
+                    {
                         launcherTabs.SelectedTab = scriptsTab;
-                    }else{
+                    }
+                    else
+                    {
                         launcherTabs.SelectedTab = commandsTab;
                     }
                     break;
@@ -617,14 +621,17 @@ namespace Visual_PowerShell
             FocusLists();
         }
 
-        void FocusLists(){
-            if(launcherTabs.SelectedTab == commandsTab)
+        void FocusLists()
+        {
+            if (launcherTabs.SelectedTab == commandsTab)
             {
                 commandList.Focus();
-            }else if(launcherTabs.SelectedTab == terminal)
+            }
+            else if (launcherTabs.SelectedTab == terminal)
             {
                 terminalArea.Focus();
-            }else if(launcherTabs.SelectedTab == scriptsTab)
+            }
+            else if (launcherTabs.SelectedTab == scriptsTab)
             {
                 scriptList.Focus();
             }
@@ -633,16 +640,19 @@ namespace Visual_PowerShell
         private void mainTabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (mainTabControl.SelectedTab == launcher)
-            { 
+            {
                 FocusLists();
-            }else if(mainTabControl.SelectedTab == repositories)
+            }
+            else if (mainTabControl.SelectedTab == repositories)
             {
                 repositoryList.Focus();
             }
         }
 
-        void SetScriptIndex(int index){
-            if (index >= 0 && index < scriptList.Items.Count){
+        void SetScriptIndex(int index)
+        {
+            if (index >= 0 && index < scriptList.Items.Count)
+            {
                 scriptList.SelectedIndex = index;
             }
         }
@@ -742,6 +752,9 @@ namespace Visual_PowerShell
             colorPicker.ForeColor = terminalArea.ForeColor;
             colorPicker.BackColor = terminalArea.BackColor;
         }
-
+        private async void runBot_Click(object sender, EventArgs e)
+        {
+            await BotRunner();
+        }
     }
 }

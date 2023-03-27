@@ -58,7 +58,7 @@ namespace Visual_PowerShell
                 switch (type)
                 {
                     case "text":
-                        if(launchedFromBot && Bot.Instance.chatId is not null)
+                        if (launchedFromBot && Bot.Instance.chatId is not null)
                         {
                             await Bot.Instance.Prompt("Enter Text", key);
                             SetBotState(Bot.Instance.state);
@@ -80,8 +80,9 @@ namespace Visual_PowerShell
                         }
                         break;
                     case "file":
-                        if(launchedFromBot && Bot.Instance.chatId is not null){
-                            await Bot.Instance.FolderDialog(workplaceInput.Text, true, false,key);
+                        if (launchedFromBot && Bot.Instance.chatId is not null)
+                        {
+                            await Bot.Instance.FolderDialog(workplaceInput.Text, true, false, key);
                             SetBotState(Bot.Instance.state);
                             // wait while state is not lauching
                             while (Bot.Instance.state == Bot.State.FolderInput)
@@ -89,17 +90,20 @@ namespace Visual_PowerShell
                                 await Task.Delay(250);
                             }
                             value = Bot.Instance.currentPath;
-                        }else{
+                        }
+                        else
+                        {
                             var fileDialog = new OpenFileDialog();
                             fileDialog.Title = $"Open {key}";
-                            fileDialog.DefaultExt= "file" ;
+                            fileDialog.DefaultExt = "file";
                             fileDialog.ShowDialog();
                             value = fileDialog.FileName;
                         }
                         break;
                     case "save":
-                        if(launchedFromBot && Bot.Instance.chatId is not null){
-                            await Bot.Instance.FolderDialog(workplaceInput.Text, false, true,"(1/2) Folder for "+key);
+                        if (launchedFromBot && Bot.Instance.chatId is not null)
+                        {
+                            await Bot.Instance.FolderDialog(workplaceInput.Text, false, true, "(1/2) Folder for " + key);
                             SetBotState(Bot.Instance.state);
                             // wait while state is not lauching
                             while (Bot.Instance.state == Bot.State.FolderInput)
@@ -107,15 +111,17 @@ namespace Visual_PowerShell
                                 await Task.Delay(250);
                             }
                             var folder = Bot.Instance.currentPath;
-                            await Bot.Instance.Prompt("Enter Filename (ex: test.txt)", "(2/2) Filename for "+key);
+                            await Bot.Instance.Prompt("Enter Filename (ex: test.txt)", "(2/2) Filename for " + key);
                             SetBotState(Bot.Instance.state);
                             // wait while state is not lauching
                             while (Bot.Instance.state == Bot.State.Input)
                             {
                                 await Task.Delay(250);
                             }
-                            value = Path.Combine(folder,Bot.Instance.lastValue);
-                        }else{
+                            value = Path.Combine(folder, Bot.Instance.lastValue);
+                        }
+                        else
+                        {
                             var saveDialog = new SaveFileDialog();
                             saveDialog.Title = $"Save {key}";
                             saveDialog.DefaultExt = "file";
@@ -125,8 +131,9 @@ namespace Visual_PowerShell
                         }
                         break;
                     case "folder":
-                        if(launchedFromBot && Bot.Instance.chatId is not null){
-                            await Bot.Instance.FolderDialog(workplaceInput.Text, false, true,key);
+                        if (launchedFromBot && Bot.Instance.chatId is not null)
+                        {
+                            await Bot.Instance.FolderDialog(workplaceInput.Text, false, true, key);
                             SetBotState(Bot.Instance.state);
                             // wait while state is not lauching
                             while (Bot.Instance.state == Bot.State.FolderInput)
@@ -134,7 +141,9 @@ namespace Visual_PowerShell
                                 await Task.Delay(250);
                             }
                             value = Bot.Instance.currentPath;
-                        }else{
+                        }
+                        else
+                        {
                             var folderDialog = new FolderBrowserDialog();
                             folderDialog.Description = $"Select Folder '{key}'";
                             folderDialog.ShowDialog();
@@ -145,7 +154,7 @@ namespace Visual_PowerShell
                         MessageBox.Show("Unknown Prompt Type : " + type);
                         break;
                 }
-                for(int i=runningScriptIndex; i < scripts.Count; i++)
+                for (int i = runningScriptIndex; i < scripts.Count; i++)
                 {
                     scripts[i] = scripts[i].Replace(match.Value, value).TrimEnd();
                 }
@@ -187,7 +196,7 @@ namespace Visual_PowerShell
                     TerminalLog($"\r\n     ---\r\n ({runningScriptIndex}/{scripts.Count} Success: {script})");
                 }
                 ScrollTerminalArea();
-                if (runningScriptIndex< scripts.Count && !ps.HadErrors)
+                if (runningScriptIndex < scripts.Count && !ps.HadErrors)
                 {
                     await RunScripts();
                 }
@@ -208,7 +217,7 @@ namespace Visual_PowerShell
 
         public void TerminalLog(string text)
         {
-            terminalArea.InvokeIfRequired(async() =>
+            terminalArea.InvokeIfRequired(async () =>
             {
                 terminalArea.Text += text;
                 if (launchedFromBot && Bot.Instance.chatId is not null && text.Trim().Length != 0)

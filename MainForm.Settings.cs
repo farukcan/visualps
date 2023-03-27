@@ -1,5 +1,4 @@
 using System.IO;
-using System.Management.Automation;
 using System.Text;
 using Visual_PowerShell.Models;
 
@@ -10,7 +9,7 @@ namespace Visual_PowerShell
         void SaveSettings()
         {
             StringBuilder repoAdresses = new StringBuilder();
-            foreach(Repository repository in commandRepositories )
+            foreach (Repository repository in commandRepositories)
             {
                 if (repository.Address.StartsWith("http") || File.Exists(repository.Address))
                 {

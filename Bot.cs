@@ -206,7 +206,8 @@ namespace Visual_PowerShell
                                 }
                                 catch (System.Exception e)
                                 {
-                                    if(!e.Message.Contains("message is not modified")){
+                                    if (!e.Message.Contains("message is not modified"))
+                                    {
                                         lock (lastText)
                                         {
                                             lastText += $"\n\r{e.Message}";
