@@ -165,96 +165,119 @@ namespace Visual_PowerShell
             state = State.Input;
         }
         Message lastTextMessage = null;
-        DateTime lastTextMessageTime = DateTime.Now;
         public string lastText = "";
         BackgroundWorker textMessageWorker;
         bool textChanged = false;
-        public async Task SendText(string text)
+        InlineKeyboardMarkup cancelReplyKeyboardMarkup = new(new[]
         {
-            if (chatId is null) return;
-            InlineKeyboardMarkup replyKeyboardMarkup = new(new[]
-            {
-                new InlineKeyboardButton[] { "[Done]" },
-            });
-            if ((DateTime.Now - lastTextMessageTime).TotalMilliseconds < 2000)
-            {
-                lock (lastText)
-                {
-                    lastText += $"\n\r{text}";
-                }
-                lastTextMessageTime = DateTime.Now;
-                textChanged = true;
-                if (textMessageWorker is null)
-                {
-                    textMessageWorker = new BackgroundWorker();
-                    textMessageWorker.DoWork += async (a, b) =>
-                    {
-                        const int MaxLength = 4000;
-                        while (true)
-                        {
-                            if (textChanged && lastTextMessage != null)
-                            {
-                                bool failed = false;
-                                try
-                                {
-                                    await client.EditMessageTextAsync(
-                                        chatId: chatId,
-                                        messageId: lastTextMessage.MessageId,
-                                        text: lastText.Substring(0, Math.Min(MaxLength, lastText.Length)),
-                                        replyMarkup: replyKeyboardMarkup
-                                    );
-                                }
-                                catch (System.Exception e)
-                                {
-                                    if (!e.Message.Contains("message is not modified"))
-                                    {
-                                        lock (lastText)
-                                        {
-                                            lastText += $"\n\r{e.Message}";
-                                        }
-                                        failed = true;
-                                    }
-                                }
+            new InlineKeyboardButton[] { "[Cancel]" },
+        });
+        InlineKeyboardMarkup doneReplyKeyboardMarkup = new(new[]
+        {
+            new InlineKeyboardButton[] { "[Done]" },
+        });
+        const int MaxMessageLength = 4000;
 
-                                if (lastText.Length < MaxLength && !failed)
+        public void SendLog(string text)
+        {
+            lock (lastText)
+            {
+                lastText += $"\n\r{text}";
+                textChanged = true;
+            }
+            TextWorker();
+        }
+
+        public void TextWorker()
+        {
+            if (textMessageWorker is null)
+            {
+                textMessageWorker = new BackgroundWorker();
+                textMessageWorker.DoWork += async (a, b) =>
+                {
+                    while (true)
+                    {
+                        if (lastTextMessage != null && textChanged)
+                        {
+                            bool isFailed = false;
+                            bool overflow = lastText.Length >= MaxMessageLength;
+                            try
+                            {
+                                textChanged = false;
+                                var markup = overflow ? doneReplyKeyboardMarkup : cancelReplyKeyboardMarkup;
+                                await client.EditMessageTextAsync(
+                                    chatId: chatId,
+                                    messageId: lastTextMessage.MessageId,
+                                    text: lastText.Substring(0, Math.Min(MaxMessageLength, lastText.Length)),
+                                    replyMarkup: markup
+                                );
+                            }
+                            catch (System.Exception e)
+                            {
+                                if (!e.Message.Contains("message is not modified"))
                                 {
-                                    textChanged = false;
-                                }
-                                else if (failed)
-                                {
-                                    lastTextMessage = await client.SendTextMessageAsync(
-                                        chatId: chatId,
-                                        text: lastText,
-                                        replyMarkup: replyKeyboardMarkup
-                                        );
-                                    Thread.Sleep(500);
-                                }
-                                else
-                                {
-                                    lastText = lastText.Substring(MaxLength);
-                                    lastTextMessage = await client.SendTextMessageAsync(
-                                        chatId: chatId,
-                                        text: lastText.Substring(0, Math.Min(MaxLength, lastText.Length)),
-                                        replyMarkup: replyKeyboardMarkup
-                                        );
+                                    lock (lastText)
+                                    {
+                                        lastText += $"\n\r{e.Message}";
+                                    }
+                                    isFailed = true;
                                 }
                             }
-                            Thread.Sleep(200);
+
+                            if (isFailed)
+                            {
+                                lastTextMessage = await client.SendTextMessageAsync(
+                                    chatId: chatId,
+                                    text: lastText,
+                                    replyMarkup: cancelReplyKeyboardMarkup
+                                    );
+                            }
+                            else if (overflow)
+                            {
+                                lock (lastText)
+                                {
+                                    lastText = lastText.Substring(MaxMessageLength);
+                                }
+                                lastTextMessage = await client.SendTextMessageAsync(
+                                    chatId: chatId,
+                                    text: lastText.Substring(0, Math.Min(MaxMessageLength, lastText.Length)),
+                                    replyMarkup: cancelReplyKeyboardMarkup
+                                    );
+                            }
                         }
-                    };
-                    textMessageWorker.RunWorkerAsync();
-                }
+                        await Task.Delay(200);
+                    }
+                };
+                textMessageWorker.RunWorkerAsync();
             }
-            else
+        }
+
+        public async Task StartLog()
+        {
+            lock (lastText)
             {
-                lastText = $"{text}";
-                lastTextMessageTime = DateTime.Now;
-                lastTextMessage = await client.SendTextMessageAsync(
-                     chatId: chatId,
-                     text: lastText,
-                     replyMarkup: replyKeyboardMarkup
-                     );
+                lastText = "";
             }
+            lastTextMessage = await client.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: "Running ...",
+                    replyMarkup: cancelReplyKeyboardMarkup
+            );
+        }
+
+        public async Task EndLog()
+        {
+            textChanged = false;
+            if (lastTextMessage != null)
+            {
+                await client.EditMessageTextAsync(
+                    chatId: chatId,
+                    messageId: lastTextMessage.MessageId,
+                    text: lastText.Substring(0, Math.Min(MaxMessageLength, lastText.Length)) + "˜",
+                    replyMarkup: doneReplyKeyboardMarkup
+                );
+            }
+            lastTextMessage = null;
         }
 
         public async Task StartConversation()
@@ -270,11 +293,13 @@ namespace Visual_PowerShell
 
             Message sentMessage = await client.SendTextMessageAsync(
                 chatId: chatId,
-                text: "Welcome to Visual PowerShell!",
+                text: "*Welcome to Visual PowerShell!* \n\r /repo /cmd /workspace",
+                parseMode: ParseMode.Markdown,
                 replyMarkup: replyKeyboardMarkup);
         }
         public string currentPath;
         public bool dialogFileSelectParam, dialogFolderSelectParam;
+        Message lastFolderDialog;
         public async Task FolderDialog(string path, bool fileSelect = false, bool folderSelect = true, string text = "")
         {
             if (chatId is null) return;
@@ -284,15 +309,6 @@ namespace Visual_PowerShell
             var list = new List<InlineKeyboardButton[]>();
             List<Tuple<string, string>> pairs = new();
             var directories = Directory.GetDirectories(path);
-            // parent folder
-            if (folderSelect)
-            {
-                pairs.Add(new Tuple<string, string>("✅ Select Folder", "🔼 Parent Folder"));
-            }
-            else
-            {
-                pairs.Add(new Tuple<string, string>("🔼 Parent Folder", ""));
-            }
             for (int i = 0; i < directories.Length; i += 2)
             {
                 if (i + 1 < directories.Length)
@@ -323,6 +339,15 @@ namespace Visual_PowerShell
                     }
                 }
             }
+            // parent folder
+            if (folderSelect)
+            {
+                pairs.Add(new Tuple<string, string>("✅ Select Folder", "🔼 Parent Folder"));
+            }
+            else
+            {
+                pairs.Add(new Tuple<string, string>("🔼 Parent Folder", ""));
+            }
             foreach (var (a, b) in pairs)
             {
                 if (string.IsNullOrEmpty(b))
@@ -345,13 +370,26 @@ namespace Visual_PowerShell
                 }
             }
             caption = text + "\n\r" + caption;
-            await client.SendTextMessageAsync(
+            lastFolderDialog = await client.SendTextMessageAsync(
                         chatId: chatId,
                         text: $"{caption} - {path}",
                         parseMode: ParseMode.Markdown,
                         replyMarkup: new InlineKeyboardMarkup(list)
                         );
             state = State.FolderInput;
+        }
+        public async Task EndFolderDialog()
+        {
+            if (lastFolderDialog is not null)
+            {
+                await client.EditMessageTextAsync(
+                    chatId: chatId,
+                    messageId: lastFolderDialog.MessageId,
+                    text: "Selected path : " + currentPath,
+                    replyMarkup: doneReplyKeyboardMarkup
+                );
+                lastFolderDialog = null;
+            }
         }
 
         public delegate Task UpdateHandler(Update update);

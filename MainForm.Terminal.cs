@@ -28,7 +28,7 @@ namespace Visual_PowerShell
                 MessageBox.Show("Please add scripts to the commands.");
                 return;
             }
-            LaunchingMode();
+            await LaunchingMode();
             scripts.Clear();
             runningScriptIndex = 0;
             TerminalLog($"\r\n     -----------");
@@ -50,6 +50,10 @@ namespace Visual_PowerShell
             PowerShell ps = PowerShell.Create();
             var regex = new Regex(@"\{.*?:.*?\}");
             var matches = regex.Matches(scripts[runningScriptIndex]).Distinct(new RegexMatchComparer());
+            if (matches.Count<Match>() > 0 && launchedFromBot && Bot.Instance.chatId is not null)
+            {
+                await Bot.Instance.EndLog();
+            }
             foreach (Match match in matches)
             {
                 var type = match.Value.Split(':')[0].TrimStart('{').ToLower();
@@ -159,6 +163,10 @@ namespace Visual_PowerShell
                     scripts[i] = scripts[i].Replace(match.Value, value).TrimEnd();
                 }
             }
+            if (matches.Count<Match>() > 0 && launchedFromBot && Bot.Instance.chatId is not null)
+            {
+                await Bot.Instance.StartLog();
+            }
             var script = scripts[runningScriptIndex];
             runningScriptIndex++;
             ps.AddScript($"Set-Location -Path '{workplaceInput.Text}'");
@@ -202,7 +210,6 @@ namespace Visual_PowerShell
                 }
                 else
                 {
-                    LaunchFreeMode();
                     if (backToCommands.Checked && !ps.HadErrors)
                     {
                         launcherTabs.InvokeIfRequired(() =>
@@ -210,6 +217,7 @@ namespace Visual_PowerShell
                             launcherTabs.SelectedTab = commandsTab;
                         });
                     }
+                    await LaunchFreeMode();
                 }
             };
             worker.RunWorkerAsync();
@@ -217,12 +225,12 @@ namespace Visual_PowerShell
 
         public void TerminalLog(string text)
         {
-            terminalArea.InvokeIfRequired(async () =>
+            terminalArea.InvokeIfRequired(() =>
             {
                 terminalArea.Text += text;
                 if (launchedFromBot && Bot.Instance.chatId is not null && text.Trim().Length != 0)
                 {
-                    await Bot.Instance.SendText(text.Trim());
+                    Bot.Instance.SendLog(text.Trim());
                 }
             });
         }
@@ -242,7 +250,7 @@ namespace Visual_PowerShell
             if (null != collection)
             {
                 var outputItem = collection[eventArgs.Index];
-                terminalArea.InvokeIfRequired(async () =>
+                terminalArea.InvokeIfRequired(() =>
                 {
                     TerminalLog("\r\n" + outputItem.ToString());
                     ScrollTerminalArea();
@@ -252,31 +260,42 @@ namespace Visual_PowerShell
         async Task Cancel()
         {
             TerminalLog($"\r\n  (Cancelled Manually)");
-            LaunchFreeMode();
             if (_ps is not null)
             {
                 _ps.Stop();
                 _ps = null;
             }
+            await LaunchFreeMode();
         }
 
-        void LaunchingMode()
+        async Task LaunchingMode()
         {
-            launcherTabs.SelectedTab = terminal;
-            ((Control)commandsTab).Enabled = false;
-            ((Control)scriptsTab).Enabled = false;
-        }
-
-        void LaunchFreeMode()
-        {
-            SetBotState(Bot.State.Command);
-            cancelButtons.InvokeIfRequired(() =>
+            mainTabControl.InvokeIfRequired(() =>
             {
+                launcherTabs.SelectedTab = terminal;
+                ((Control)commandsTab).Enabled = false;
+                ((Control)scriptsTab).Enabled = false;
+            });
+            if (launchedFromBot && Bot.Instance.chatId is not null)
+            {
+                await Bot.Instance.StartLog();
+            }
+        }
+
+        async Task LaunchFreeMode()
+        {
+            if (launchedFromBot && Bot.Instance.chatId is not null)
+            {
+                await Bot.Instance.EndLog();
+            }
+            mainTabControl.InvokeIfRequired(() =>
+            {
+                SetBotState(Bot.State.Command);
                 cancelButtons.Enabled = false;
                 ((Control)scriptsTab).Enabled = true;
                 ((Control)commandsTab).Enabled = true;
+                launchedFromBot = false;
             });
-            launchedFromBot = false;
         }
     }
 }

@@ -72,6 +72,8 @@
             this.addLocal = new System.Windows.Forms.Button();
             this.repositoryList = new System.Windows.Forms.ListBox();
             this.settingsTab = new System.Windows.Forms.TabPage();
+            this.botfatherLink = new System.Windows.Forms.LinkLabel();
+            this.launchBotOnStart = new System.Windows.Forms.CheckBox();
             this.runBot = new System.Windows.Forms.Button();
             this.botToken = new System.Windows.Forms.TextBox();
             this.label25 = new System.Windows.Forms.Label();
@@ -103,7 +105,6 @@
             this.label7 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
-            this.launchBotOnStart = new System.Windows.Forms.CheckBox();
             this.mainTabControl.SuspendLayout();
             this.launcher.SuspendLayout();
             this.launcherTabs.SuspendLayout();
@@ -640,6 +641,7 @@
             // 
             // settingsTab
             // 
+            this.settingsTab.Controls.Add(this.botfatherLink);
             this.settingsTab.Controls.Add(this.launchBotOnStart);
             this.settingsTab.Controls.Add(this.runBot);
             this.settingsTab.Controls.Add(this.botToken);
@@ -659,6 +661,28 @@
             this.settingsTab.Text = "⚙️ Settings";
             this.settingsTab.UseVisualStyleBackColor = true;
             this.settingsTab.Click += new System.EventHandler(this.settingsTab_Click);
+            // 
+            // botfatherLink
+            // 
+            this.botfatherLink.AutoSize = true;
+            this.botfatherLink.Location = new System.Drawing.Point(350, 238);
+            this.botfatherLink.Name = "botfatherLink";
+            this.botfatherLink.Size = new System.Drawing.Size(232, 18);
+            this.botfatherLink.TabIndex = 15;
+            this.botfatherLink.TabStop = true;
+            this.botfatherLink.Text = "Create bot token and paste here";
+            this.botfatherLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.botfatherLink_LinkClicked);
+            // 
+            // launchBotOnStart
+            // 
+            this.launchBotOnStart.AutoSize = true;
+            this.launchBotOnStart.Location = new System.Drawing.Point(4, 291);
+            this.launchBotOnStart.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.launchBotOnStart.Name = "launchBotOnStart";
+            this.launchBotOnStart.Size = new System.Drawing.Size(166, 22);
+            this.launchBotOnStart.TabIndex = 14;
+            this.launchBotOnStart.Text = "Launch Bot On Start";
+            this.launchBotOnStart.UseVisualStyleBackColor = true;
             // 
             // runBot
             // 
@@ -973,17 +997,6 @@
             this.notifyIcon.Click += new System.EventHandler(this.notifyIcon_MouseClick);
             this.notifyIcon.MouseClick += new System.Windows.Forms.MouseEventHandler(this.notifyIcon_MouseClick);
             // 
-            // launchBotOnStart
-            // 
-            this.launchBotOnStart.AutoSize = true;
-            this.launchBotOnStart.Location = new System.Drawing.Point(4, 291);
-            this.launchBotOnStart.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.launchBotOnStart.Name = "launchBotOnStart";
-            this.launchBotOnStart.Size = new System.Drawing.Size(166, 22);
-            this.launchBotOnStart.TabIndex = 14;
-            this.launchBotOnStart.Text = "Launch Bot On Start";
-            this.launchBotOnStart.UseVisualStyleBackColor = true;
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -1094,6 +1107,7 @@
         private System.Windows.Forms.TextBox botToken;
         private System.Windows.Forms.Label label25;
         private System.Windows.Forms.CheckBox launchBotOnStart;
+        private System.Windows.Forms.LinkLabel botfatherLink;
     }
 }
 

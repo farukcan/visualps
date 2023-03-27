@@ -756,5 +756,10 @@ namespace Visual_PowerShell
         {
             await BotRunner();
         }
+
+        private void botfatherLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            OpenURL("https://telegram.me/botfather");
+        }
     }
 }

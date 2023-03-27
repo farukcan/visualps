@@ -2,6 +2,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Visual_PowerShell.Helpers;
 
@@ -28,172 +29,7 @@ namespace Visual_PowerShell
                         {
                             Bot.Instance.chatId = update.Message.Chat.Id;
                         }
-                        runBot.InvokeIfRequired(() =>
-                        {
-                            runBot.Text = "Stop Listening";
-                        });
-
-                        Bot.Instance.handler = async (update) =>
-                        {
-                            string text;
-                            if (update.Type == UpdateType.Message)
-                            {
-                                text = update.Message.Text;
-                                if (text == "🛠️ Commands")
-                                {
-                                    await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
-                                    SetBotState(Bot.State.Command);
-                                    return;
-                                }
-                                else if (text == "📚 Repositories")
-                                {
-                                    await Bot.Instance.SendRepositoriesAsync(commandRepositories);
-                                    SetBotState(Bot.State.Repository);
-                                    return;
-                                }
-                                else if (text == "📁 Set Workspace")
-                                {
-                                    await Bot.Instance.FolderDialog(workplaceInput.Text);
-                                    SetBotState(Bot.State.FolderInput);
-                                    botWorkspaceSelectMode = true;
-                                    return;
-                                }
-                            }
-                            else if (update.Type == UpdateType.CallbackQuery)
-                            {
-                                text = update.CallbackQuery.Data;
-                                await Bot.Instance.client.DeleteMessageAsync(update.CallbackQuery.Message.Chat.Id, update.CallbackQuery.Message.MessageId);
-                            }
-                            else
-                            {
-                                MessageBox.Show(update.Type.ToString());
-                                return;
-                            }
-                            switch (Bot.Instance.state)
-                            {
-                                case Bot.State.Command:
-                                    if (text == "[Switch Repository]")
-                                    {
-                                        await Bot.Instance.SendRepositoriesAsync(commandRepositories);
-                                        SetBotState(Bot.Instance.state);
-                                        break;
-                                    }
-                                    // search for command
-                                    var repo = commandRepositories[repositoryIndex];
-                                    for (int i = 0; i < repo.Commands.Count; i++)
-                                    {
-                                        if (repo.Commands[i].Name == text)
-                                        {
-                                            mainTabControl.InvokeIfRequired(() =>
-                                            {
-                                                TrayIconClick();
-                                                SetCommandIndex(i);
-                                                SetBotState(Bot.State.Launching);
-                                                launchedFromBot = true;
-                                                mainTabControl.SelectedTab = launcher;
-                                                launcherTabs.SelectedTab = commandsTab;
-                                                launchButton.PerformClick();
-                                            });
-                                            return;
-                                        }
-                                    }
-                                    //await Bot.Instance.SendText("Command Not Found");
-                                    //await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
-                                    SetBotState(Bot.Instance.state);
-                                    break;
-                                case Bot.State.Repository:
-                                    if (text == "[Back]")
-                                    {
-                                        await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
-                                        SetBotState(Bot.Instance.state);
-                                        break;
-                                    }
-                                    // search for repository
-                                    for (int i = 0; i < commandRepositories.Count; i++)
-                                    {
-                                        if (commandRepositories[i].Name == text)
-                                        {
-                                            mainTabControl.InvokeIfRequired(() =>
-                                            {
-                                                SetRepositoryIndex(i);
-                                            });
-                                            await Bot.Instance.SendRepositoryAsync(commandRepositories[i]);
-                                            return;
-                                        }
-                                    }
-                                    //await Bot.Instance.SendText("Repository Not Found");
-                                    //await Bot.Instance.SendRepositoriesAsync(commandRepositories);
-                                    SetBotState(Bot.Instance.state);
-                                    break;
-                                case Bot.State.Launching:
-                                    if (text == "[Done]")
-                                    {
-                                        await Cancel();
-                                    }
-                                    break;
-                                case Bot.State.Input:
-                                    if (update.Type == UpdateType.Message)
-                                    {
-                                        Bot.Instance.lastValue = text;
-                                        SetBotState(Bot.State.Launching);
-                                    }
-                                    break;
-                                case Bot.State.FolderInput:
-                                    if (botWorkspaceSelectMode)
-                                    {
-                                        if (text == "🔼 Parent Folder")
-                                        {
-                                            await Bot.Instance.FolderDialog(Path.GetDirectoryName(Bot.Instance.currentPath));
-                                        }
-                                        else if (text == "✅ Select Folder")
-                                        {
-                                            workplaceInput.InvokeIfRequired(() =>
-                                            {
-                                                workplaceInput.Text = Bot.Instance.currentPath;
-                                            });
-                                            await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
-                                            SetBotState(Bot.State.Command);
-                                            botWorkspaceSelectMode = false;
-                                        }
-                                        else
-                                        {
-                                            await Bot.Instance.FolderDialog(Path.Combine(Bot.Instance.currentPath, text.Replace("📁", "")));
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (text == "🔼 Parent Folder")
-                                        {
-                                            await Bot.Instance.FolderDialog(
-                                                Path.GetDirectoryName(Bot.Instance.currentPath),
-                                                Bot.Instance.dialogFileSelectParam,
-                                                Bot.Instance.dialogFolderSelectParam
-                                            );
-                                        }
-                                        else if (text == "✅ Select Folder")
-                                        {
-                                            SetBotState(Bot.State.Launching);
-                                        }
-                                        else
-                                        {
-                                            if (text.Contains("📁"))
-                                            {
-                                                await Bot.Instance.FolderDialog(
-                                                    Path.Combine(Bot.Instance.currentPath, text.Replace("📁", "")),
-                                                    Bot.Instance.dialogFileSelectParam,
-                                                    Bot.Instance.dialogFolderSelectParam
-                                                );
-                                            }
-                                            else
-                                            {
-                                                SetBotState(Bot.State.Launching);
-                                                Bot.Instance.currentPath = Path.Combine(Bot.Instance.currentPath, text.Replace("📄", ""));
-                                            }
-                                        }
-                                    }
-                                    break;
-                            }
-                        }; // handler end
+                        Bot.Instance.handler = MessageHandler;
                         await Bot.Instance.StartConversation();
                     }
                 };
@@ -239,5 +75,192 @@ namespace Visual_PowerShell
                 }
             });
         }
+        async Task MessageHandler(Update update)
+        {
+            string text;
+            int id;
+            long chatId;
+            if (update.Type == UpdateType.Message)
+            {
+                text = update.Message.Text;
+                id = update.Message.MessageId;
+                chatId = update.Message.Chat.Id;
+                if (Bot.Instance.state != Bot.State.Input)
+                {
+                    if (text == "🛠️ Commands" || text == "/cmd")
+                    {
+                        await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
+                        SetBotState(Bot.State.Command);
+                        return;
+                    }
+                    else if (text == "📚 Repositories" || text == "/repo")
+                    {
+                        await Bot.Instance.SendRepositoriesAsync(commandRepositories);
+                        SetBotState(Bot.State.Repository);
+                        return;
+                    }
+                    else if (text == "📁 Set Workspace" || text == "/workspace")
+                    {
+                        await Bot.Instance.FolderDialog(workplaceInput.Text);
+                        SetBotState(Bot.State.FolderInput);
+                        botWorkspaceSelectMode = true;
+                        return;
+                    }
+                }
+            }
+            else if (update.Type == UpdateType.CallbackQuery)
+            {
+                text = update.CallbackQuery.Data;
+                id = update.CallbackQuery.Message.MessageId;
+                chatId = update.CallbackQuery.Message.Chat.Id;
+                if (text == "[Done]"
+                        || (text == "[Cancel]" && Bot.Instance.state != Bot.State.Launching)
+                    )
+                {
+                    await Bot.Instance.client.DeleteMessageAsync(chatId, id);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Unknown Type : " + update.Type.ToString());
+                return;
+            }
+            if (chatId != Bot.Instance.chatId)
+            {
+                MessageBox.Show("Unknown chatId : " + chatId);
+                return;
+            }
+            switch (Bot.Instance.state)
+            {
+                case Bot.State.Command:
+                    if (text == "[Switch Repository]")
+                    {
+                        await Bot.Instance.client.DeleteMessageAsync(chatId, id);
+                        await Bot.Instance.SendRepositoriesAsync(commandRepositories);
+                        SetBotState(Bot.Instance.state);
+                        break;
+                    }
+                    // search for command
+                    var repo = commandRepositories[repositoryIndex];
+                    for (int i = 0; i < repo.Commands.Count; i++)
+                    {
+                        if (repo.Commands[i].Name == text)
+                        {
+                            mainTabControl.InvokeIfRequired(() =>
+                            {
+                                TrayIconClick();
+                                SetCommandIndex(i);
+                                SetBotState(Bot.State.Launching);
+                                launchedFromBot = true;
+                                mainTabControl.SelectedTab = launcher;
+                                launcherTabs.SelectedTab = commandsTab;
+                                launchButton.PerformClick();
+                            });
+                            await Bot.Instance.client.DeleteMessageAsync(chatId, id);
+                            return;
+                        }
+                    }
+                    SetBotState(Bot.Instance.state);
+                    break;
+                case Bot.State.Repository:
+                    if (text == "[Back]")
+                    {
+                        await Bot.Instance.client.DeleteMessageAsync(chatId, id);
+                        await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
+                        SetBotState(Bot.Instance.state);
+                        break;
+                    }
+                    // search for repository
+                    for (int i = 0; i < commandRepositories.Count; i++)
+                    {
+                        if (commandRepositories[i].Name == text)
+                        {
+                            mainTabControl.InvokeIfRequired(() =>
+                            {
+                                SetRepositoryIndex(i);
+                            });
+                            await Bot.Instance.client.DeleteMessageAsync(chatId, id);
+                            await Bot.Instance.SendRepositoryAsync(commandRepositories[i]);
+                            return;
+                        }
+                    }
+                    SetBotState(Bot.Instance.state);
+                    break;
+                case Bot.State.Launching:
+                    if (text == "[Cancel]")
+                    {
+                        await Cancel();
+                    }
+                    break;
+                case Bot.State.Input:
+                    if (update.Type == UpdateType.Message)
+                    {
+                        Bot.Instance.lastValue = text;
+                        SetBotState(Bot.State.Launching);
+                    }
+                    break;
+                case Bot.State.FolderInput:
+                    if (botWorkspaceSelectMode)
+                    {
+                        if (text == "🔼 Parent Folder")
+                        {
+                            await Bot.Instance.client.DeleteMessageAsync(chatId, id);
+                            await Bot.Instance.FolderDialog(Path.GetDirectoryName(Bot.Instance.currentPath));
+                        }
+                        else if (text == "✅ Select Folder")
+                        {
+                            workplaceInput.InvokeIfRequired(() =>
+                            {
+                                workplaceInput.Text = Bot.Instance.currentPath;
+                            });
+                            await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
+                            await Bot.Instance.EndFolderDialog();
+                            SetBotState(Bot.State.Command);
+                            botWorkspaceSelectMode = false;
+                        }
+                        else
+                        {
+                            await Bot.Instance.client.DeleteMessageAsync(chatId, id);
+                            await Bot.Instance.FolderDialog(Path.Combine(Bot.Instance.currentPath, text.Replace("📁", "")));
+                        }
+                    }
+                    else
+                    {
+                        if (text == "🔼 Parent Folder")
+                        {
+                            await Bot.Instance.client.DeleteMessageAsync(chatId, id);
+                            await Bot.Instance.FolderDialog(
+                                Path.GetDirectoryName(Bot.Instance.currentPath),
+                                Bot.Instance.dialogFileSelectParam,
+                                Bot.Instance.dialogFolderSelectParam
+                            );
+                        }
+                        else if (text == "✅ Select Folder")
+                        {
+                            await Bot.Instance.EndFolderDialog();
+                            SetBotState(Bot.State.Launching);
+                        }
+                        else
+                        {
+                            if (text.Contains("📁"))
+                            {
+                                await Bot.Instance.client.DeleteMessageAsync(chatId, id);
+                                await Bot.Instance.FolderDialog(
+                                    Path.Combine(Bot.Instance.currentPath, text.Replace("📁", "")),
+                                    Bot.Instance.dialogFileSelectParam,
+                                    Bot.Instance.dialogFolderSelectParam
+                                );
+                            }
+                            else
+                            {
+                                Bot.Instance.currentPath = Path.Combine(Bot.Instance.currentPath, text.Replace("📄", ""));
+                                await Bot.Instance.EndFolderDialog();
+                                SetBotState(Bot.State.Launching);
+                            }
+                        }
+                    }
+                    break;
+            }
+        } // handler end
     }
 }
