@@ -3,32 +3,13 @@ using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Management.Automation;
-using System.Management.Automation.Runspaces;
-using System.Net.Http;
-using System.Reflection;
-using System.Security.Policy;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Visual_PowerShell.Helpers;
 using Visual_PowerShell.Models;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using Command = Visual_PowerShell.Models.Command;
-using System.Text.RegularExpressions;
-using System.Diagnostics;
-using System.Speech.Synthesis;
 using Prompt = Visual_PowerShell.Helpers.Prompt;
-using System.Drawing.Printing;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot;
+using System.Diagnostics;
 
 namespace Visual_PowerShell
 {
@@ -133,7 +114,6 @@ namespace Visual_PowerShell
             await RetreivePackages();
             mainTabControl.Enabled = true;
             mainTabControl.SelectedTab = launcher;
-
             SetRepositoryIndex(Properties.Settings.Default.RepositoryIndex);
             commandList.Focus();
             if (launchBotOnStart.Checked)
@@ -163,27 +143,6 @@ namespace Visual_PowerShell
                     }
                 }
             }
-        }
-        void SaveSettings()
-        {
-            StringBuilder repoAdresses = new StringBuilder();
-            foreach(Repository repository in commandRepositories )
-            {
-                if (repository.Address.StartsWith("http") || File.Exists(repository.Address))
-                {
-                    repoAdresses.AppendLine(repository.Address);
-                }
-            }
-            Properties.Settings.Default.CommandRepositories = repoAdresses.ToString();
-            Properties.Settings.Default.RepositoryPackages = packageList.Text;
-            Properties.Settings.Default.Workspace = workplaceInput.Text;
-            Properties.Settings.Default.RepositoryIndex = repositoryList.SelectedIndex;
-            Properties.Settings.Default.BackToCommands = backToCommands.Checked;
-            Properties.Settings.Default.DefaultAuthor = defaultAuthor.Text;
-            Properties.Settings.Default.DefaultWebsite = defaultWebsite.Text;
-            Properties.Settings.Default.BotToken = botToken.Text;
-            Properties.Settings.Default.LaunchBotOnStart = launchBotOnStart.Checked;
-            Properties.Settings.Default.Save();
         }
         private void UpdateRepositoryList()
         {
@@ -233,128 +192,13 @@ namespace Visual_PowerShell
         {
             OpenFile();
         }
-        void OpenFile()
-        {
-            OpenFileDialog dialog = new OpenFileDialog();
-            dialog.Multiselect = true;
-            dialog.Title = "Load Local JSON";
-            dialog.DefaultExt = "json";
-            dialog.Filter = "JSON files (*.json)|*.json";
-            dialog.CheckFileExists = true;
-            dialog.CheckPathExists = true;
-            dialog.ShowDialog();
-            try
-            {
-                foreach (var fileName in dialog.FileNames)
-                {
-                    LoadFile(fileName);
-                }
-            }
-            catch (Exception exception)
-            {
-                MessageBox.Show(exception.Message);
-            }
-        }
-        void LoadFile(string fileName)
-        {
-            using (StreamReader reader = new StreamReader(fileName))
-            {
-                string json = reader.ReadToEnd();
-                Repository repository = JsonConvert.DeserializeObject<Repository>(json);
-                repository.Address = fileName;
-                int updateRepositoryIndex = commandRepositories.FindLastIndex((r)=>r.Address==repository.Address);
-                if(updateRepositoryIndex!= -1)
-                {
-                    commandRepositories[updateRepositoryIndex] = repository;
-                }
-                else
-                {
-                    commandRepositories.Add(repository);
-                }
-                UpdateRepositoryList();
-                SetRepositoryIndex(commandRepositories.Count-1);
-            }
-        }
-
+ 
         private async void addRemote_Click(object sender, EventArgs e)
         {
             (bool haveValue, string promptValue) = Prompt.ShowDialog("JSON URL (Gist, API, CDN)", "Download Remote JSON","Download");
             if (!haveValue || string.IsNullOrEmpty(promptValue)) return;
 
             await LoadFromURL(promptValue,true);
-        }
-        private async Task LoadFromURL(string url,bool setRepoIndex=false)
-        {
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    var response = await client.GetAsync(ParseGistURL(url));
-                    var json = await response.Content.ReadAsStringAsync();
-                    Repository repository = JsonConvert.DeserializeObject<Repository>(json);
-                    repository.Address = url;
-                    int updateRepositoryIndex = commandRepositories.FindLastIndex((r) => r.Address == repository.Address);
-                    if (updateRepositoryIndex != -1)
-                    {
-                        commandRepositories[updateRepositoryIndex] = repository;
-                    }
-                    else
-                    {
-                        commandRepositories.Add(repository);
-                    }
-                    UpdateRepositoryList();
-                    if(setRepoIndex) SetRepositoryIndex(commandRepositories.Count-1);
-                }
-            }
-            catch (Exception exception)
-            {
-                MessageBox.Show(exception.Message, url);
-            }
-            // done
-        }
-
-        private string ParseGistURL(string url)
-        {
-            if (url.StartsWith("https://gist.github.com/"))
-            {
-                url = url.Replace("https://gist.github.com/", "https://gist.githubusercontent.com/");
-                if (!url.Contains("/raw"))
-                {
-                    url = url + (url.EndsWith("/") ? "raw?update=" : "/raw?update=") +DateTime.Now.ToFileTime();
-                }
-            }
-            return url;
-        }
-
-        private async Task RetreivePackages()
-        {
-            // split to lines
-            var packages = packageList.Text.Split(
-                new string[] { "\r\n", "\r", "\n" },
-                StringSplitOptions.None
-            );
-            // foreach package
-            foreach ( var package in packages )
-            {
-                try
-                {
-                    using (HttpClient client = new HttpClient())
-                    {
-                        var response = await client.GetAsync(ParseGistURL(package));
-                        var json = await response.Content.ReadAsStringAsync();
-                        var list = JsonConvert.DeserializeObject<List<string>>(json);
-                        foreach (var url in list)
-                        {
-                            await LoadFromURL(url);
-                        }
-                    }
-                }
-                catch(Exception exception)
-                {
-                    MessageBox.Show(exception.Message);
-                }
-            }
-            UpdateRepositoryList();
         }
 
         private void newCommand_Click(object sender, EventArgs e)
@@ -387,33 +231,7 @@ namespace Visual_PowerShell
         {
             SaveRepository();
         }
-        void SaveRepository()
-        {
-            if (repositoryList.SelectedItem is null) return;
-            var repo = commandRepositories[repositoryList.SelectedIndex];
-            SaveFileDialog dialog = new SaveFileDialog();
-            dialog.Title = "Save Repository as JSON File";
-            dialog.DefaultExt = "json";
-            dialog.Filter = "JSON files (*.json)|*.json";
-            if (!repo.Address.StartsWith("http") && File.Exists(repo.Address))
-            {
-                dialog.InitialDirectory = Path.GetDirectoryName(repo.Address);
-                dialog.FileName = Path.GetFileName(repo.Address);
-            }
-            dialog.CheckPathExists = true;
-            dialog.ShowDialog(this);
-            if (string.IsNullOrEmpty(dialog.FileName)) return;
-            repo.Address = dialog.FileName;
-            repo.Author = authorInput.Text;
-            repo.Name = repoNameInput.Text;
-            repo.Website = websiteInput.Text;
-            // Write
-            TextWriter txt = new StreamWriter(dialog.FileName);
-            var json = JsonConvert.SerializeObject(repo, Formatting.Indented);
-            txt.Write(json);
-            txt.Close();
-            UpdateRepositoryList();
-        }
+
 
         private void settingsTab_Click(object sender, EventArgs e)
         {
@@ -443,236 +261,9 @@ namespace Visual_PowerShell
             UpdateScripts();
             scriptList.SelectedIndex = command.Scripts.Count - 1;
         }
-        bool launchedFromBot = false;
         private async void launchButton_Click(object sender, EventArgs e)
         {
             await LaunchAsync();
-        }
-        PowerShell _ps;
-        List<string> scripts = new List<string>();
-        int runningScriptIndex = 0;
-        private async Task LaunchAsync()
-        {
-            if (repositoryList.SelectedItem is null) return;
-            if (commandList.SelectedItem is null) return;
-            var repo = commandRepositories[repositoryList.SelectedIndex];
-            var command = repo.Commands[commandList.SelectedIndex];
-            if (command.Scripts.Count == 0)
-            {
-                MessageBox.Show("Please add scripts to the commands.");
-                return;
-            }
-            LaunchingMode();
-            scripts.Clear();
-            runningScriptIndex = 0;
-            TerminalLog($"\r\n     -----------");
-            TerminalLog($"\r\n     Directory: {workplaceInput.Text}");
-            int i = 0;
-            foreach (var script in command.Scripts)
-            {
-                i++;
-                TerminalLog($"\r\n     {i})   " + script);
-                scripts.Add(script);
-            }
-            TerminalLog($"\r\n     ----------- \r\n");
-            ScrollTerminalArea();
-            await RunScripts();
-        }
-
-        private async Task RunScripts()
-        {
-            PowerShell ps = PowerShell.Create();
-            var regex = new Regex(@"\{.*?:.*?\}");
-            var matches = regex.Matches(scripts[runningScriptIndex]).Distinct(new RegexMatchComparer());
-            foreach (Match match in matches)
-            {
-                var type = match.Value.Split(':')[0].TrimStart('{').ToLower();
-                var key = match.Value.Split(':')[1].TrimEnd('}');
-                string value = string.Empty;
-                switch (type)
-                {
-                    case "text":
-                        if(launchedFromBot && Bot.Instance.chatId is not null)
-                        {
-                            await Bot.Instance.Prompt("Enter Text", key);
-                            SetBotState(Bot.Instance.state);
-                            // wait while state is not lauching
-                            while (Bot.Instance.state == Bot.State.Input)
-                            {
-                                await Task.Delay(250);
-                            }
-                            value = Bot.Instance.lastValue;
-                        }
-                        else
-                        {
-                            (bool haveValue, value) = Prompt.ShowDialog(key, "Enter text", "Enter");
-                            if (!haveValue)
-                            {
-                                await Cancel();
-                                return;
-                            }
-                        }
-                        break;
-                    case "file":
-                        if(launchedFromBot && Bot.Instance.chatId is not null){
-                            await Bot.Instance.FolderDialog(workplaceInput.Text, true, false,key);
-                            SetBotState(Bot.Instance.state);
-                            // wait while state is not lauching
-                            while (Bot.Instance.state == Bot.State.FolderInput)
-                            {
-                                await Task.Delay(250);
-                            }
-                            value = Bot.Instance.currentPath;
-                        }else{
-                            var fileDialog = new OpenFileDialog();
-                            fileDialog.Title = $"Open {key}";
-                            fileDialog.DefaultExt= "file" ;
-                            fileDialog.ShowDialog();
-                            value = fileDialog.FileName;
-                        }
-                        break;
-                    case "save":
-                        if(launchedFromBot && Bot.Instance.chatId is not null){
-                            await Bot.Instance.FolderDialog(workplaceInput.Text, false, true,"(1/2) Folder for "+key);
-                            SetBotState(Bot.Instance.state);
-                            // wait while state is not lauching
-                            while (Bot.Instance.state == Bot.State.FolderInput)
-                            {
-                                await Task.Delay(250);
-                            }
-                            var folder = Bot.Instance.currentPath;
-                            await Bot.Instance.Prompt("Enter Filename (ex: test.txt)", "(2/2) Filename for "+key);
-                            SetBotState(Bot.Instance.state);
-                            // wait while state is not lauching
-                            while (Bot.Instance.state == Bot.State.Input)
-                            {
-                                await Task.Delay(250);
-                            }
-                            value = Path.Combine(folder,Bot.Instance.lastValue);
-                        }else{
-                            var saveDialog = new SaveFileDialog();
-                            saveDialog.Title = $"Save {key}";
-                            saveDialog.DefaultExt = "file";
-                            saveDialog.Filter = "All files (*.*)|*.*";
-                            saveDialog.ShowDialog();
-                            value = saveDialog.FileName;
-                        }
-                        break;
-                    case "folder":
-                        if(launchedFromBot && Bot.Instance.chatId is not null){
-                            await Bot.Instance.FolderDialog(workplaceInput.Text, false, true,key);
-                            SetBotState(Bot.Instance.state);
-                            // wait while state is not lauching
-                            while (Bot.Instance.state == Bot.State.FolderInput)
-                            {
-                                await Task.Delay(250);
-                            }
-                            value = Bot.Instance.currentPath;
-                        }else{
-                            var folderDialog = new FolderBrowserDialog();
-                            folderDialog.Description = $"Select Folder '{key}'";
-                            folderDialog.ShowDialog();
-                            value = folderDialog.SelectedPath;
-                        }
-                        break;
-                    default:
-                        MessageBox.Show("Unknown Prompt Type : " + type);
-                        break;
-                }
-                for(int i=runningScriptIndex; i < scripts.Count; i++)
-                {
-                    scripts[i] = scripts[i].Replace(match.Value, value).TrimEnd();
-                }
-            }
-            var script = scripts[runningScriptIndex];
-            runningScriptIndex++;
-            ps.AddScript($"Set-Location -Path '{workplaceInput.Text}'");
-            ps.AddScript(script);
-            _ps = ps;
-            ps.AddCommand("Out-String").AddParameter("Stream", true);
-
-            var output = new PSDataCollection<string>();
-            output.DataAdded += new EventHandler<DataAddedEventArgs>(ProcessOutput);
-            cancelButtons.Enabled = true;
-
-            var asyncToken = ps.BeginInvoke<object, string>(null, output);
-
-            BackgroundWorker worker = new BackgroundWorker();
-            worker.DoWork += async (obj, args) =>
-            {
-                while (!(asyncToken.IsCompleted || ps.HadErrors))
-                {
-                    Thread.Sleep(100);
-                }
-                foreach (var warningRecord in ps.Streams.Warning)
-                {
-                    TerminalLog("\r\n" + warningRecord.ToString());
-                }
-                if (ps.HadErrors)
-                {
-                    foreach (var errorRecord in ps.Streams.Error)
-                    {
-                        TerminalLog("\r\n" + errorRecord.ToString());
-                    }
-                    TerminalLog($"\r\n     ---\r\n  ({runningScriptIndex}/{scripts.Count} Failed: {script})");
-                }
-                else
-                {
-                    TerminalLog($"\r\n     ---\r\n ({runningScriptIndex}/{scripts.Count} Success: {script})");
-                }
-                ScrollTerminalArea();
-                if (runningScriptIndex< scripts.Count && !ps.HadErrors)
-                {
-                    await RunScripts();
-                }
-                else
-                {
-                    LaunchFreeMode();
-                    if (backToCommands.Checked && !ps.HadErrors)
-                    {
-                        launcherTabs.InvokeIfRequired(() =>
-                        {
-                            launcherTabs.SelectedTab = commandsTab;
-                        });
-                    }
-                }
-            };
-            worker.RunWorkerAsync();
-        }
-
-        public void TerminalLog(string text)
-        {
-            terminalArea.InvokeIfRequired(async() =>
-            {
-                terminalArea.Text += text;
-                if (launchedFromBot && Bot.Instance.chatId is not null && text.Trim().Length != 0)
-                {
-                    await Bot.Instance.SendText(text.Trim());
-                }
-            });
-        }
-
-        void ScrollTerminalArea()
-        {
-            terminalArea.InvokeIfRequired(() =>
-            {
-                terminalArea.SelectionStart = terminalArea.TextLength;
-                terminalArea.ScrollToCaret();
-            });
-        }
-
-        void ProcessOutput(object? sender, DataAddedEventArgs eventArgs)
-        {
-            var collection = sender as PSDataCollection<string>;
-            if (null != collection)
-            {
-                var outputItem = collection[eventArgs.Index];
-                terminalArea.InvokeIfRequired(async () =>
-                {
-                    TerminalLog("\r\n" + outputItem.ToString());
-                    ScrollTerminalArea();
-                });
-            }
         }
 
         private void workplaceInput_TextChanged(object sender, EventArgs e)
@@ -696,35 +287,6 @@ namespace Visual_PowerShell
         private async void cancelButtons_Click(object sender, EventArgs e)
         {
             await Cancel();
-        }
-        async Task Cancel()
-        {
-            TerminalLog($"\r\n  (Cancelled Manually)");
-            LaunchFreeMode();
-            if (_ps is not null)
-            {
-                _ps.Stop();
-                _ps = null;
-            }
-        }
-
-        void LaunchingMode()
-        {
-            launcherTabs.SelectedTab = terminal;
-            ((Control)commandsTab).Enabled = false;
-            ((Control)scriptsTab).Enabled = false;
-        }
-
-        void LaunchFreeMode()
-        {
-            SetBotState(Bot.State.Command);
-            cancelButtons.InvokeIfRequired(() =>
-            {
-                cancelButtons.Enabled = false;
-                ((Control)scriptsTab).Enabled = true;
-                ((Control)commandsTab).Enabled = true;
-            });
-            launchedFromBot = false;
         }
 
         private async void launchOnClick(object sender, EventArgs e)
@@ -1180,202 +742,6 @@ namespace Visual_PowerShell
             colorPicker.ForeColor = terminalArea.ForeColor;
             colorPicker.BackColor = terminalArea.BackColor;
         }
-        bool botWorkspaceSelectMode = false;
-        private async void runBot_Click(object sender, EventArgs e)
-        {
-            if(Bot.Instance.client is null)
-            {
-                Bot.Instance.SetToken(botToken.Text);
-                Bot.Instance.handler = async (update) =>
-                {
-                    if(update.Type == UpdateType.Message || update.Type == UpdateType.CallbackQuery)
-                    {
-                        if(update.Type == UpdateType.CallbackQuery){
-                            Bot.Instance.chatId = update.CallbackQuery.Message.Chat.Id;
-                        }else{
-                            Bot.Instance.chatId = update.Message.Chat.Id;
-                        }
-                        runBot.InvokeIfRequired(() =>
-                        {
-                            runBot.Text = "Stop Listening";
-                        });
-                       
-                        Bot.Instance.handler = async (update) =>
-                        {
-                            string text;
-                            if (update.Type == UpdateType.Message)
-                            {
-                                text = update.Message.Text;
-                                if(text == "🛠️ Commands"){
-                                    await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
-                                    SetBotState(Bot.State.Command);
-                                    return;
-                                }else if(text == "📚 Repositories"){
-                                    await Bot.Instance.SendRepositoriesAsync(commandRepositories);
-                                    SetBotState(Bot.State.Repository);
-                                    return;
-                                }else if(text == "📁 Set Workspace"){
-                                    await Bot.Instance.FolderDialog(workplaceInput.Text);
-                                    SetBotState(Bot.State.FolderInput);
-                                    botWorkspaceSelectMode = true;
-                                    return;
-                                }
-                            }else if(update.Type == UpdateType.CallbackQuery){
-                                text = update.CallbackQuery.Data;
-                                await Bot.Instance.client.DeleteMessageAsync(update.CallbackQuery.Message.Chat.Id, update.CallbackQuery.Message.MessageId);
-                            }else{
-                                MessageBox.Show(update.Type.ToString());
-                                return;
-                            }
-                            switch (Bot.Instance.state)
-                            {
-                                case Bot.State.Command:
-                                    if ( text == "[Switch Repository]")
-                                    {
-                                        await Bot.Instance.SendRepositoriesAsync(commandRepositories);
-                                        SetBotState(Bot.Instance.state);
-                                        break;
-                                    }
-                                    // search for command
-                                    var repo = commandRepositories[repositoryIndex];
-                                    for (int i=0; i < repo.Commands.Count; i++)
-                                    {
-                                        if (repo.Commands[i].Name == text)
-                                        {
-                                            mainTabControl.InvokeIfRequired(() =>
-                                            {
-                                                TrayIconClick();
-                                                SetCommandIndex(i);
-                                                SetBotState(Bot.State.Launching);
-                                                launchedFromBot = true;
-                                                mainTabControl.SelectedTab = launcher;
-                                                launcherTabs.SelectedTab = commandsTab;
-                                                launchButton.PerformClick();
-                                            });
-                                            return;
-                                        }
-                                    }
-                                    //await Bot.Instance.SendText("Command Not Found");
-                                    //await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
-                                    SetBotState(Bot.Instance.state);
-                                    break;
-                                case Bot.State.Repository:
-                                    if (text == "[Back]")
-                                    {
-                                        await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
-                                        SetBotState(Bot.Instance.state);
-                                        break;
-                                    }
-                                    // search for repository
-                                    for(int i=0; i< commandRepositories.Count; i++)
-                                    {
-                                        if (commandRepositories[i].Name == text)
-                                        {
-                                            mainTabControl.InvokeIfRequired(() => {
-                                                SetRepositoryIndex(i);
-                                            });
-                                            await Bot.Instance.SendRepositoryAsync(commandRepositories[i]);
-                                            return;
-                                        }
-                                    }
-                                    //await Bot.Instance.SendText("Repository Not Found");
-                                    //await Bot.Instance.SendRepositoriesAsync(commandRepositories);
-                                    SetBotState(Bot.Instance.state);
-                                    break;
-                                case Bot.State.Launching:
-                                    if (text == "[Done]"){
-                                        await Cancel();
-                                    }
-                                    break;
-                                case Bot.State.Input:
-                                    if (update.Type == UpdateType.Message){
-                                        Bot.Instance.lastValue = text;
-                                        SetBotState(Bot.State.Launching);
-                                    }
-                                    break;
-                                case Bot.State.FolderInput:
-                                    if(botWorkspaceSelectMode){
-                                        if(text == "🔼 Parent Folder"){
-                                            await Bot.Instance.FolderDialog(Path.GetDirectoryName(Bot.Instance.currentPath));
-                                        }else if(text == "✅ Select Folder"){
-                                            workplaceInput.InvokeIfRequired(() =>{
-                                                workplaceInput.Text = Bot.Instance.currentPath;
-                                            });
-                                            await Bot.Instance.SendRepositoryAsync(commandRepositories[repositoryIndex]);
-                                            SetBotState(Bot.State.Command);
-                                            botWorkspaceSelectMode = false;
-                                        }else{
-                                            await Bot.Instance.FolderDialog(Path.Combine(Bot.Instance.currentPath, text.Replace("📁","")));
-                                        }
-                                    }else{
-                                        if(text == "🔼 Parent Folder"){
-                                            await Bot.Instance.FolderDialog(
-                                                Path.GetDirectoryName(Bot.Instance.currentPath),
-                                                Bot.Instance.dialogFileSelectParam,
-                                                Bot.Instance.dialogFolderSelectParam
-                                            );
-                                        }else if(text == "✅ Select Folder"){
-                                            SetBotState(Bot.State.Launching);
-                                        }else{
-                                            if(text.Contains("📁")){
-                                                await Bot.Instance.FolderDialog(
-                                                    Path.Combine(Bot.Instance.currentPath, text.Replace("📁","")),
-                                                    Bot.Instance.dialogFileSelectParam,
-                                                    Bot.Instance.dialogFolderSelectParam
-                                                );
-                                            }else{
-                                                SetBotState(Bot.State.Launching);
-                                                Bot.Instance.currentPath = Path.Combine(Bot.Instance.currentPath, text.Replace("📄",""));
-                                            }
-                                        }
-                                    }
-                                    break;
-                            }
-                        }; // handler end
-                         await Bot.Instance.StartConversation();
-                    }
-                };
-            }
-            if(Bot.Instance.chatId is null && Bot.Instance.user is null)
-            {
-                await Bot.Instance.GetMe();
-                SetBotState(Bot.State.Waiting);
-            }
-            else
-            {
-                var client = Bot.Instance.client;
-                Bot.Instance.client = null;
-                Bot.Instance.chatId = null;
-                SetBotState(Bot.State.Idle);
-            }
-        }
-        void SetBotState(Bot.State state)
-        {
-            Bot.Instance.state = state;
-            runBot.InvokeIfRequired(() =>
-            {
-                switch (state)
-                {
-                    case Bot.State.Idle:
-                        runBot.Text = "Run Bot";
-                        break;
-                    case Bot.State.Waiting:
-                        runBot.Text = "Waiting for first message to : " + Bot.Instance.user.Username;
-                        break;
-                    case Bot.State.Launching:
-                        runBot.Text = "Active - Launching Command";
-                        break;
-                    case Bot.State.Command:
-                        runBot.Text = "Active - Command Selector";
-                        break;
-                    case Bot.State.Repository:
-                        runBot.Text = "Active - Repository Selector";
-                        break;
-                    case Bot.State.Input:
-                        runBot.Text = "Active - Waiting for input";
-                        break;
-                }
-            });
-        }
+
     }
 }
