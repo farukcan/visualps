@@ -302,8 +302,10 @@ namespace Visual_PowerShell
         }
         public void SendInput(string input)
         {
-            //pipeline.Input.Write(input);
-            //psInput.Add(input);
+            // TODO: What i tried?
+            //  pipeline.Input.Write(input);
+            //  psInput.Add(input);
+            //  steppablePipeline.Process(input);
         }
         public void SendInput()
         {
