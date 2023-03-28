@@ -300,5 +300,18 @@ namespace Visual_PowerShell
             ps.Stop();
             ps = null;
         }
+        public void SendInput(string input)
+        {
+            //pipeline.Input.Write(input);
+            //psInput.Add(input);
+        }
+        public void SendInput()
+        {
+            (var done, var input) = Prompt.ShowDialog("Enter Input", "Input");
+            if (done)
+            {
+                SendInput(input);
+            }
+        }
     }
 }

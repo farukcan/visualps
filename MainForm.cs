@@ -765,5 +765,10 @@ namespace Visual_PowerShell
         {
             OpenURL("https://telegram.me/botfather");
         }
+
+        private void sendInputButton_Click(object sender, EventArgs e)
+        {
+            SendInput();
+        }
     }
 }

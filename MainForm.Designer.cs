@@ -58,6 +58,7 @@
             this.deleteScript = new System.Windows.Forms.Button();
             this.scriptList = new System.Windows.Forms.ListBox();
             this.terminal = new System.Windows.Forms.TabPage();
+            this.sendInputButton = new System.Windows.Forms.Button();
             this.colorPicker = new System.Windows.Forms.Label();
             this.backToCommands = new System.Windows.Forms.CheckBox();
             this.cancelButtons = new System.Windows.Forms.Button();
@@ -462,17 +463,29 @@
             // 
             // terminal
             // 
+            this.terminal.Controls.Add(this.sendInputButton);
             this.terminal.Controls.Add(this.colorPicker);
             this.terminal.Controls.Add(this.backToCommands);
             this.terminal.Controls.Add(this.cancelButtons);
             this.terminal.Controls.Add(this.terminalArea);
-            this.terminal.Location = new System.Drawing.Point(4, 24);
+            this.terminal.Location = new System.Drawing.Point(4, 27);
             this.terminal.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.terminal.Name = "terminal";
-            this.terminal.Size = new System.Drawing.Size(571, 605);
+            this.terminal.Size = new System.Drawing.Size(571, 602);
             this.terminal.TabIndex = 2;
             this.terminal.Text = "🖥️ Terminal";
             this.terminal.UseVisualStyleBackColor = true;
+            // 
+            // sendInputButton
+            // 
+            this.sendInputButton.Font = new System.Drawing.Font("Arial", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.sendInputButton.Location = new System.Drawing.Point(374, 568);
+            this.sendInputButton.Name = "sendInputButton";
+            this.sendInputButton.Size = new System.Drawing.Size(40, 31);
+            this.sendInputButton.TabIndex = 17;
+            this.sendInputButton.Text = "⌨️";
+            this.sendInputButton.UseVisualStyleBackColor = true;
+            this.sendInputButton.Click += new System.EventHandler(this.sendInputButton_Click);
             // 
             // colorPicker
             // 
@@ -1108,6 +1121,7 @@
         private System.Windows.Forms.Label label25;
         private System.Windows.Forms.CheckBox launchBotOnStart;
         private System.Windows.Forms.LinkLabel botfatherLink;
+        private System.Windows.Forms.Button sendInputButton;
     }
 }
 
