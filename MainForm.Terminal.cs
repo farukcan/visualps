@@ -14,7 +14,7 @@ namespace Visual_PowerShell
 {
     public partial class MainForm
     {
-        PowerShell _ps;
+        PowerShell ps;
         List<string> scripts = new List<string>();
         int runningScriptIndex = 0;
         private async Task LaunchAsync()
@@ -42,12 +42,12 @@ namespace Visual_PowerShell
             }
             TerminalLog($"\r\n     ----------- \r\n");
             ScrollTerminalArea();
+            ps = PowerShell.Create();
             await RunScripts();
         }
 
         private async Task RunScripts()
         {
-            PowerShell ps = PowerShell.Create();
             var regex = new Regex(@"\{.*?:.*?\}");
             var matches = regex.Matches(scripts[runningScriptIndex]).Distinct(new RegexMatchComparer());
             if (matches.Count<Match>() > 0 && launchedFromBot && Bot.Instance.chatId is not null)
@@ -169,9 +169,10 @@ namespace Visual_PowerShell
             }
             var script = scripts[runningScriptIndex];
             runningScriptIndex++;
+            ps.Commands.Clear();
+            ps.Streams.ClearStreams();
             ps.AddScript($"Set-Location -Path '{workplaceInput.Text}'");
             ps.AddScript(script);
-            _ps = ps;
             ps.AddCommand("Out-String").AddParameter("Stream", true);
 
             var output = new PSDataCollection<string>();
@@ -260,10 +261,10 @@ namespace Visual_PowerShell
         async Task Cancel()
         {
             TerminalLog($"\r\n  (Cancelled Manually)");
-            if (_ps is not null)
+            if (ps is not null)
             {
-                _ps.Stop();
-                _ps = null;
+                ps.Stop();
+                ps = null;
             }
             await LaunchFreeMode();
         }
@@ -296,6 +297,8 @@ namespace Visual_PowerShell
                 ((Control)commandsTab).Enabled = true;
                 launchedFromBot = false;
             });
+            ps.Stop();
+            ps = null;
         }
     }
 }
