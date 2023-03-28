@@ -719,6 +719,10 @@ namespace Visual_PowerShell
                 case Keys.Control | Keys.O:
                     OpenFile();
                     break;
+                case Keys.Escape:
+                    mainTabControl.SelectedTab = launcher;
+                    launcherTabs.SelectedTab = commandsTab;
+                    break;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
