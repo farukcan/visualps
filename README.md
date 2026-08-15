@@ -1,4 +1,5 @@
 # Visual PowerShell
+<img width="646" height="696" alt="image" src="https://github.com/user-attachments/assets/2c2a8f0f-17f6-4b82-90b3-2f09bbffb684" />
 
 Open Source Powershell Executer GUI.
 
